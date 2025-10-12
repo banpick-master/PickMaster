@@ -1,0 +1,97 @@
+import { Container, Typography, Box, Button, Link, Stack } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { styled } from '@mui/material/styles';
+
+const Root = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: '100vh',
+  backgroundColor: theme.palette.background.default,
+}));
+
+const ContentWrapper = styled(Container)(({ theme }) => ({
+  textAlign: 'center',
+  padding: theme.spacing(4),
+}));
+
+const Title = styled(Typography)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  marginBottom: theme.spacing(2),
+}));
+
+const Subtitle = styled(Typography)(({ theme }) => ({
+  color: theme.palette.text.secondary,
+  maxWidth: '600px',
+  margin: '0 auto',
+  marginBottom: theme.spacing(4),
+}));
+
+const ButtonGroup = styled(Stack)(({ theme }) => ({
+  marginBottom: theme.spacing(4),
+}));
+
+const LinkGroup = styled(Stack)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+}));
+
+
+const LobbyPage = () => {
+  const navigate = useNavigate();
+
+  return (
+    <Root>
+      <ContentWrapper maxWidth="lg">
+        <Box>
+          <Title variant="h1" gutterBottom>
+            Pick Master
+          </Title>
+          <Subtitle variant="h6">
+            실제 LoL 대회와 같은 밴픽 경험을 친구들과 무료로 즐겨보세요!
+          </Subtitle>
+        </Box>
+
+        <ButtonGroup direction="row" spacing={3} justifyContent="center">
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={() => navigate("/mode-select")}
+          >
+            새 게임 생성
+          </Button>
+          <Button
+            variant="outlined"
+            color="secondary"
+            size="large"
+            onClick={() => {
+              const roomId = prompt("참여할 방의 ID를 입력하세요:");
+              if (roomId) {
+                navigate(`/room/${roomId}`);
+              }
+            }}
+          >
+            참가
+          </Button>
+        </ButtonGroup>
+
+        <LinkGroup direction="row" spacing={3} justifyContent="center">
+          <Link href="https://www.leagueoflegends.com/ko-kr/news/tags/patch-notes/" target="_blank" rel="noopener">
+            최신 패치 노트
+          </Link>
+          <Link href="https://op.gg/ko/lol/champions" target="_blank" rel="noopener">
+            OP.GG 챔피언 티어
+          </Link>
+          <Link href="https://github.com/cookiboii" target="_blank" rel="noopener">
+            개발자 GitHub
+          </Link>
+        </LinkGroup>
+        <Link href="https://open.kakao.com/o/sSE1QQqe" target="_blank" rel="noopener">
+          문의 및 피드백
+        </Link>
+      </ContentWrapper>
+    </Root>
+  );
+};
+
+export default LobbyPage;
