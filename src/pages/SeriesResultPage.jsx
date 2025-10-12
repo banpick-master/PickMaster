@@ -72,7 +72,7 @@ const SeriesResultPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const captureRef = useRef(null);
-  const { startGameSeries } = useRoomStore();
+  const { startGameSeries, resetRoomState } = useRoomStore();
 
   const { gameSeries, blueTeamName, redTeamName } = location.state || {};
 
@@ -113,7 +113,7 @@ const SeriesResultPage = () => {
   };
 
   const handleReturnToLobby = () => {
-    startGameSeries();
+    resetRoomState();
     navigate('/');
   };
 

@@ -121,6 +121,8 @@ export const useRoomStore = create((set, get) => ({
     get().roomId === 'local' ? set(updater) : updateStateAndNotify(set, get, updater);
   },
 
+  resetRoomState: () => set(initialState),
+
   // --- (이하 다른 함수들은 수정할 필요 없음) ---
   connectToRoom: async (roomId) => {
     if (roomId === 'local') {
