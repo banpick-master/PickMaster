@@ -2,23 +2,18 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EventsGateway } from './events.gateway';
-import * as admin from 'firebase-admin';
-import { ServiceAccount } from "firebase-admin";
+import * as admin from 'firebase-admin'; // 큰따옴표를 작은따옴표로 변경
+import { Firestore } from 'firebase-admin/firestore'; // 큰따옴표를 작은따옴표로 변경
+import * as serviceAccount from '../serviceAccountKey.json';
 
 const firestoreProvider = {
   provide: 'FIRESTORE',
   useFactory: () => {
-    // The service account key is expected to be in a JSON file
-    // in the root of the 'pickmaster-backend' directory.
-    // The user will be instructed on how to obtain this file.
-    const serviceAccount: ServiceAccount = require('../serviceAccountKey.json');
-
     if (admin.apps.length === 0) {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-        });
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount as any),
+      });
     }
-
     return admin.firestore();
   },
 };
@@ -27,6 +22,6 @@ const firestoreProvider = {
   imports: [],
   controllers: [AppController],
   providers: [AppService, EventsGateway, firestoreProvider],
-  exports: [firestoreProvider],
+  exports: [firestoreProvider], // Firestore 프로바이더를 다른 모듈에서 사용할 수 있도록 export
 })
 export class AppModule {}

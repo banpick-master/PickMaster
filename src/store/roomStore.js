@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { getRoomAPI } from '../lib/api'; // (가정) lib/api.js에 이 함수가 구현되어 있어야 합니다.
-import { getSocket, joinRoom, subscribeToRoomUpdates, sendStateUpdate } from '../lib/socket'; // (가정) lib/socket.js에 이 함수들이 구현되어 있어야 합니다.
+import { getSocket, joinRoom, subscribeToRoomUpdates, sendJoinTeam, sendStateUpdate, sendSwitchTeam } from '../lib/socket'; // (가정) lib/socket.js에 이 함수들이 구현되어 있어야 합니다.
 
 const BANPICK_ORDER = [
   { team: "blue", action: "ban" }, { team: "red", action: "ban" },
@@ -48,7 +48,7 @@ const updateStateAndNotify = (set, get, partialStateOrFn) => {
   const newState = get();
   // myPlayerId 같이 클라이언트마다 다른 값은 제외하고 순수 게임 상태만 동기화
   const { roomId, isConnected, myPlayerId, ...stateToSync } = newState; 
-  if (roomId) {
+  if (roomId && roomId !== 'local') {
     sendStateUpdate(roomId, stateToSync);
   }
 };
@@ -74,6 +74,10 @@ export const useRoomStore = create((set, get) => ({
 
   // --- 연결 및 참가 액션 ---
   connectToRoom: async (roomId) => {
+    if (roomId === 'local') {
+      set({ roomId: 'local', isConnected: true });
+      return;
+    }
     // 1. API를 통해 방의 현재 상태를 가져옵니다.
     try {
       const initialStateFromServer = await getRoomAPI(roomId);
@@ -105,57 +109,42 @@ export const useRoomStore = create((set, get) => ({
   },
   
   joinTeam: (team, name) => {
-    const { blueTeamPlayers, redTeamPlayers, roomId } = get();
-    const myTeam = get().getMyTeam();
-    if (myTeam) return; // 이미 팀이 있으면 아무것도 하지 않음
-
-    if ((team === 'blue' && blueTeamPlayers.length > 0) || (team === 'red' && redTeamPlayers.length > 0)) {
-      alert('이미 플레이어가 있습니다.');
+    const { roomId, myPlayerId } = get();
+    // If myPlayerId is already set, it means we have already sent a join request.
+    // Prevent sending another one and wait for the server's response.
+    if (myPlayerId) {
+      console.warn("Join request already sent. Waiting for server response.");
       return;
     }
-    
-    // ID 생성 방식 강화
+
     const newPlayer = { id: `${team}-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}`, name, isReady: false };
-    
+
+    // 1. Set myPlayerId locally to identify this client and prevent duplicate requests.
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ roomId, playerId: newPlayer.id }));
+      set({ myPlayerId: newPlayer.id });
     } catch (e) {
       console.error("localStorage에 사용자 정보를 저장하는 데 실패했습니다.", e);
     }
-    
-    updateStateAndNotify(set, get, (state) => ({
-      myPlayerId: newPlayer.id,
-      [team === 'blue' ? 'blueTeamPlayers' : 'redTeamPlayers']: [...state[team === 'blue' ? 'blueTeamPlayers' : 'redTeamPlayers'], newPlayer]
-    }));
+
+    // 2. Send the 'joinTeam' event to the server. The server is the source of truth.
+    sendJoinTeam(roomId, team, newPlayer);
   },
 
   switchTeam: () => {
+    const { roomId, myPlayerId } = get();
     const myTeam = get().getMyTeam();
-    if (!myTeam) return;
+    if (!myTeam || !myPlayerId || !roomId) return;
 
-    updateStateAndNotify(set, get, (state) => {
-      const { myPlayerId, blueTeamPlayers, redTeamPlayers } = state;
-      const player = (myTeam === 'blue' ? blueTeamPlayers : redTeamPlayers).find(p => p.id === myPlayerId);
-      if (!player) return {};
-
-      if (myTeam === 'blue' && redTeamPlayers.length === 0) {
-        return {
-          blueTeamPlayers: [],
-          redTeamPlayers: [{...player, isReady: false}],
-        };
-      } else if (myTeam === 'red' && blueTeamPlayers.length === 0) {
-        return {
-          redTeamPlayers: [],
-          blueTeamPlayers: [{...player, isReady: false}],
-        };
-      }
-      return {};
-    });
+    // 서버에 진영 변경을 요청하는 이벤트를 전송합니다.
+    // 실제 상태 변경은 서버로부터 받은 업데이트를 통해 이루어집니다.
+    sendSwitchTeam(roomId, myPlayerId);
   },
 
   // --- 밴픽 진행 액션 ---
   selectChampion: (champion) => {
-    if (!get().isMyTurn()) {
+    const { roomId } = get();
+    if (roomId !== 'local' && !get().isMyTurn()) {
       console.warn("당신의 턴이 아닙니다.");
       return;
     }

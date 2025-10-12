@@ -131,7 +131,7 @@ const GameBanPickPage = () => {
   const currentTurn = BANPICK_ORDER[turnIndex];
   const isBanpickFinished = turnIndex >= BANPICK_ORDER.length;
   const myTeam = getMyTeam();
-  const isMyTurn = currentTurn && myTeam === currentTurn.team;
+  const isMyTurn = roomId === 'local' || (currentTurn && myTeam === currentTurn.team);
 
   const handleFinishGameWrapper = (winner) => {
     finishGame({ winner });
@@ -222,7 +222,7 @@ const GameBanPickPage = () => {
             </BanPickCompletePaper>
           ) : (
             <Stack spacing={2} sx={{ height: '100%' }}>
-              {timerMode !== 'none' && <TurnTimer />}
+              {roomId !== 'local' && timerMode !== 'none' && <TurnTimer />}
               {renderTurnIndicator()}
               <Box sx={{ flex: 1, minHeight: 0, borderRadius: 1 }}>
                 <ChampionSelect champions={champions} onSelect={selectChampion} disabledChampions={getUnselectableChampionNames()} isLocked={!isMyTurn} />

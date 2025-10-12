@@ -24,9 +24,15 @@ export class AppService {
     const docRef = this.db.collection('rooms').doc(roomId);
     const doc = await docRef.get();
     if (!doc.exists) {
-      // In a real app, you might throw a NotFoundException
       return null;
     }
     return doc.data();
   }
+
+    // 👇 [추가] 방 상태를 업데이트하는 함수
+    async updateRoom(roomId: string, state: any): Promise<void> {
+      const docRef = this.db.collection('rooms').doc(roomId);
+      // merge: true 옵션으로 기존 데이터를 유지하면서 새로운 데이터만 덮어씁니다.
+      await docRef.set(state, { merge: true });
+    }
 }

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoomStore } from "../store/roomStore";
 import { createRoomAPI } from "../lib/api"; // createRoomAPI 임포트
 import { Container, Box, Typography, TextField, Button, Paper, ToggleButtonGroup, ToggleButton, Grid, Stack } from "@mui/material";
@@ -45,6 +45,12 @@ export default function ModeSelectPage() {
   const [banMode, setBanMode] = useState("tournament"); // 밴 모드 상태 추가
   const [playMode, setPlayMode] = useState("single"); // 'single' vs 'multi'
 
+  useEffect(() => {
+    if (playMode === 'single') {
+      setBanMode('fearless');
+    }
+  }, [playMode]);
+
   const handleStart = async () => {
     if (!gameName.trim() || !blueName.trim() || !redName.trim()) {
       alert("경기 이름과 팀 이름을 모두 입력해주세요!");
@@ -55,11 +61,11 @@ export default function ModeSelectPage() {
       // 혼자하기: 스토어 상태를 업데이트하고, 로컬 게임 페이지로 이동
       setGameInfo({
         gameName,
-        blueName,
-        redName,
-        setCount,
+        blueTeamName: blueName,
+        redTeamName: redName,
+        gameMode: setCount,
         timerMode,
-        banMode, // 선택된 밴 모드 전달
+        banMode: 'fearless', // 혼자하기는 항상 fearless 모드
       });
       navigate('/game/local');
     } else {
@@ -151,7 +157,7 @@ export default function ModeSelectPage() {
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <SectionTitle variant="overline">밴픽 모드</SectionTitle>
-                <FullWidthToggleButtonGroup color="primary" value={banMode} exclusive onChange={(e, val) => val && setBanMode(val)}>
+                <FullWidthToggleButtonGroup color="primary" value={banMode} exclusive onChange={(e, val) => val && setBanMode(val)} disabled={playMode === 'single'}>
                   <ToggleButton value="tournament">토너먼트 드래프트</ToggleButton>
                   <ToggleButton value="fearless">피어리스 드래프트</ToggleButton>
                 </FullWidthToggleButtonGroup>

@@ -14,8 +14,7 @@ let socket;
 export const getSocket = () => {
   if (!socket) {
     socket = io(SOCKET_URL, {
-      // 필요한 경우 여기에 소켓 옵션을 추가합니다.
-      // 예: transports: ['websocket']
+      // transports: ['websocket']
     });
 
     socket.on('connect', () => {
@@ -44,6 +43,38 @@ export const joinRoom = (roomId) => {
 };
 
 /**
+ * 서버에 팀 합류 이벤트를 보냅니다.
+ * @param {string} roomId
+ * @param {'blue' | 'red'} team
+ * @param {object} player
+ */
+export const sendJoinTeam = (roomId, team, player) => {
+  const currentSocket = getSocket();
+  currentSocket.emit('joinTeam', { roomId, team, player });
+};
+
+/**
+ * 서버에 진영 변경 이벤트를 보냅니다.
+ * @param {string} roomId
+ * @param {string} playerId
+ */
+export const sendSwitchTeam = (roomId, playerId) => {
+  const currentSocket = getSocket();
+  currentSocket.emit('switchTeam', { roomId, playerId });
+};
+
+
+/**
+ * 서버로 상태의 부분적인 업데이트를 보냅니다.
+ * @param {string} roomId - 상태를 보낼 방의 ID
+ * @param {object} state - 변경된 부분 상태
+ */
+export const sendStateUpdate = (roomId, partialState) => {
+  const currentSocket = getSocket();
+  currentSocket.emit('updateState', { room: roomId, state: partialState });
+};
+
+/**
  * 방의 상태 업데이트를 구독합니다.
  * 서버에서 'updateState' 메시지를 받으면 콜백 함수를 실행합니다.
  * @param {(state: object) => void} callback - 상태 업데이트 시 호출될 콜백
@@ -56,14 +87,4 @@ export const subscribeToRoomUpdates = (callback) => {
     console.log('Received state update from server:', state);
     callback(state);
   });
-};
-
-/**
- * 서버로 상태 업데이트를 보냅니다.
- * @param {string} roomId - 상태를 보낼 방의 ID
- * @param {object} state - 보낼 새로운 상태
- */
-export const sendStateUpdate = (roomId, state) => {
-  const currentSocket = getSocket();
-  currentSocket.emit('messageToRoom', { room: roomId, message: state });
 };

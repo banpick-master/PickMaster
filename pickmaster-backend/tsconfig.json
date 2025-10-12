@@ -20,6 +20,8 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false ,
+    "resolveJsonModule": true, // <-- [추가] JSON 파일을 모듈로 불러올 수 있게 허용
+    "esModuleInterop": true 
   }
 }
