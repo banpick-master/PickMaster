@@ -140,10 +140,10 @@ function RoomPage() {
     // If user is not in a team
     return (
       <>
-        <Button variant="contained" onClick={() => joinTeam('blue', name)} disabled={!name || blueTeamPlayers.length > 0}>
+        <Button variant="contained" onClick={() => joinTeam('blue', name)} disabled={!name}>
           블루팀 참가
         </Button>
-        <Button variant="contained" color="error" onClick={() => joinTeam('red', name)} disabled={!name || redTeamPlayers.length > 0}>
+        <Button variant="contained" color="error" onClick={() => joinTeam('red', name)} disabled={!name}>
           레드팀 참가
         </Button>
       </>
@@ -201,7 +201,6 @@ function RoomPage() {
                 variant="contained" 
                 size="large" 
                 onClick={startReadyCheck}
-                disabled={!bluePlayer || !redPlayer || readyCheckStatus === 'in-progress'}
             >
                 게임 시작
             </Button>

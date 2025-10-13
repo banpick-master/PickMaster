@@ -9,7 +9,7 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
-
+          
   @Post('/api/rooms')
   async createRoom(@Body() initialSettings: any): Promise<{ roomId: string }> {
     const roomId = await this.appService.createRoom(initialSettings);

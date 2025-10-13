@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getRoomAPI } from '../lib/api';
+import { createRoomAPI, getRoomAPI } from '../lib/api';
 import { getSocket, joinRoom, subscribeToRoomUpdates, sendStateUpdate } from '../lib/socket';
 
 const BANPICK_ORDER = [
@@ -53,6 +53,19 @@ const updateStateAndNotify = (set, get, partialStateOrFn) => {
 
 export const useRoomStore = create((set, get) => ({
   ...initialState,
+
+  createNewRoom: async (gameInfo) => {
+    try {
+      const newRoom = await createRoomAPI(gameInfo);
+      set({ ...newRoom, isConnected: true }); // 초기 상태 설정
+      return newRoom;
+    } catch (error) {
+      console.error("Error creating room:", error);
+      // 에러 처리, 예를 들어 에러 상태를 스토어에 저장할 수 있습니다.
+      // set({ error: "방 생성에 실패했습니다." });
+      throw error; // 컴포넌트에서 추가적인 에러 처리를 할 수 있도록 에러를 다시 던집니다.
+    }
+  },
 
   getMyTeam: () => {
     const { myPlayerId, blueTeamPlayers, redTeamPlayers } = get();
