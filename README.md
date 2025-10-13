@@ -37,6 +37,15 @@
     -   `@vitejs/plugin-react`: Vite에서 React 사용을 위한 플러그인
     -   `@types/react`, `@types/react-dom`: TypeScript 타입 정의 (개발 편의성)
 
+-   **백엔드 프레임워크**: `NestJS` (확장 가능한 서버 애플리케이션 구축)
+    -   `@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`: NestJS 핵심 모듈
+    -   `@nestjs/websockets`, `@nestjs/platform-socket.io`: 웹소켓 통신 지원
+-   **백엔드 서비스**: `Firebase Admin` (Firebase 서비스 서버 측 통합)
+-   **개발 도구 (백엔드)**:
+    -   `TypeScript`: 백엔드 개발 언어
+    -   `Jest`: 테스트 프레임워크
+    -   `ESLint`, `Prettier`: 코드 품질 및 포맷팅
+
 ## 🚀 시작하기
 
 ### Prerequisites
