@@ -1,6 +1,8 @@
+import { useEffect } from "react"; // 1. useEffect import 추가
 import { Container, Typography, Box, Button, Link, Stack } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { styled } from '@mui/material/styles';
+import { useRoomStore } from "../store/roomStore"; // 2. useRoomStore import 추가
 
 const Root = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -35,9 +37,15 @@ const LinkGroup = styled(Stack)(({ theme }) => ({
   marginBottom: theme.spacing(2),
 }));
 
-
 const LobbyPage = () => {
   const navigate = useNavigate();
+  const resetRoomState = useRoomStore((state) => state.resetRoomState); // 3. reset 함수 가져오기
+
+  // ✅ 4. useEffect 훅 추가
+  // 이 페이지가 로드될 때마다 이전 방 정보를 초기화합니다.
+  useEffect(() => {
+    resetRoomState();
+  }, [resetRoomState]);
 
   return (
     <Root>
@@ -64,7 +72,7 @@ const LobbyPage = () => {
             variant="outlined"
             color="secondary"
             size="large"
-                  onClick={() => {
+            onClick={() => {
               const roomId = prompt("참여할 방의 ID를 입력하세요:");
               if (roomId) {
                 navigate(`/room/${roomId}`);

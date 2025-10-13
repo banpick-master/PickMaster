@@ -22,6 +22,7 @@
     "socket.io-client": "^4.8.1",
     "sockjs-client": "^1.6.1",
     "stompjs": "^2.3.3",
+    "uid": "^2.0.2",
     "y-webrtc": "^10.3.0",
     "yjs": "^13.6.27",
     "zustand": "^5.0.8"
