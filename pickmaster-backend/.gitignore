@@ -2,8 +2,7 @@
 /dist
 /node_modules
 /build
-
-# Logs
+serviceAccountKey.json
 logs
 *.log
 npm-debug.log*
