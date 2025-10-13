@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createRoomAPI, getRoomAPI } from '../lib/api';
-import { getSocket, joinRoom, subscribeToRoomUpdates, sendStateUpdate } from '../lib/socket';
+import { getSocket, joinRoom, subscribeToRoomUpdates, sendStateUpdate, sendJoinTeam } from '../lib/socket';
 
 const BANPICK_ORDER = [
   { team: "blue", action: "ban" }, { team: "red", action: "ban" },
@@ -65,6 +65,16 @@ export const useRoomStore = create((set, get) => ({
       // set({ error: "방 생성에 실패했습니다." });
       throw error; // 컴포넌트에서 추가적인 에러 처리를 할 수 있도록 에러를 다시 던집니다.
     }
+  },
+
+  joinTeam: (team, name) => {
+    const { roomId, myPlayerId } = get();
+    if (!myPlayerId) {
+      console.error("Cannot join team without a player ID.");
+      return;
+    }
+    const player = { id: myPlayerId, name, isReady: false };
+    sendJoinTeam(roomId, team, player);
   },
 
   getMyTeam: () => {
@@ -153,12 +163,25 @@ export const useRoomStore = create((set, get) => ({
         return;
       }
     } catch (error) { console.error("방 상태를 가져오는 데 실패했습니다:", error); set({ isConnected: false }); return; }
+
+    let playerId;
     try {
       const userData = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY));
-      if (userData && userData.roomId === roomId) set({ myPlayerId: userData.playerId });
-    } catch (e) { localStorage.removeItem(LOCAL_STORAGE_KEY); }
+      if (userData && userData.roomId === roomId) {
+        playerId = userData.playerId;
+      } else {
+        playerId = Date.now().toString();
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ playerId, roomId }));
+      }
+      set({ myPlayerId: playerId });
+    } catch (e) {
+      playerId = Date.now().toString();
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ playerId, roomId }));
+      set({ myPlayerId: playerId });
+    }
+
     getSocket();
-    joinRoom(roomId);
+    joinRoom(roomId, playerId);
     subscribeToRoomUpdates(set);
   },
 }));

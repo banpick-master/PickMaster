@@ -34,13 +34,23 @@ export const getSocket = () => {
 
 /**
  * 특정 방에 참여하기 위해 'joinRoom' 이벤트를 보냅니다.
+// src/lib/socket.js
+
+// ... (기존 코드 생략)
+
+/**
+ * 특정 방에 참여하기 위해 'joinRoom' 이벤트를 보냅니다.
  * @param {string} roomId - 참여할 방의 ID
+ * @param {string} playerId - 참여하는 플레이어의 ID
  */
-export const joinRoom = (roomId) => {
+export const joinRoom = (roomId, playerId) => {
   const currentSocket = getSocket();
-  currentSocket.emit('joinRoom', roomId);
-  console.log(`Attempting to join room: ${roomId}`);
+  // ✅ [수정] roomId와 playerId를 객체로 묶어서 전송
+  currentSocket.emit('joinRoom', { roomId, playerId });
+  console.log(`Attempting to join room: ${roomId} as player: ${playerId}`);
 };
+
+// ... (이하 코드 동일)
 
 /**
  * 서버에 팀 합류 이벤트를 보냅니다.
