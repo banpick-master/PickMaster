@@ -80,8 +80,8 @@ const LobbyPage = () => {
           <Link href="https://www.leagueoflegends.com/ko-kr/news/tags/patch-notes/" target="_blank" rel="noopener">
             최신 패치 노트
           </Link>
-          <Link href="https://op.gg/ko/lol/champions" target="_blank" rel="noopener">
-            OP.GG 챔피언 티어
+          <Link href="https://lol.ps/" target="_blank" rel="noopener">
+            lol.ps
           </Link>
           <Link href="https://github.com/cookiboii" target="_blank" rel="noopener">
             개발자 GitHub

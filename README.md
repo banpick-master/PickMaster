@@ -78,5 +78,4 @@
 *이 프로젝트는 cookiboii에 의해 개발되었습니다.*
 *피드백 및 문의는 [개발자 GitHub](https://github.com/cookiboii)를 통해 부탁드립니다.*# PickMaster-Banpick-Front-end
 # PickMaster-Banpick
-# PickMaster-Banpick
-# PickMaster-Banpick
+
