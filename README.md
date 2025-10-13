@@ -16,13 +16,26 @@
 
 ## 🛠️ 기술 스택
 
--   **Frontend**: `React`, `Vite`, `React Router`
--   **State Management**: `Zustand`
--   **UI Library**: `Material-UI (MUI)`
--   **Real-time**: `Firebase Firestore`
--   **Deployment**: `Firebase Hosting`
-
-*(자세한 내용은 `package.json` 파일을 참고해주세요.)*
+-   **프론트엔드 프레임워크**: `React` (UI 구축)
+-   **빌드 도구**: `Vite` (빠른 개발 서버 및 번들링)
+-   **라우팅**: `React Router DOM` (페이지 라우팅 관리)
+-   **상태 관리**: `Zustand` (간결한 전역 상태 관리)
+-   **UI 라이브러리**: `Material-UI (MUI)` (Google Material Design 기반 UI 컴포넌트)
+    -   `@emotion/react`, `@emotion/styled`: MUI의 스타일링 엔진
+    -   `@mui/icons-material`: Material Design 아이콘
+-   **백엔드 서비스**: `Firebase` (인증, 데이터베이스 등)
+    -   `Firebase Firestore`: 실시간 데이터베이스
+    -   `Firebase Hosting`: 웹 애플리케이션 배포
+-   **실시간 통신**:
+    -   `Socket.IO Client`: 웹소켓 기반 실시간 통신
+    -   `SockJS Client`, `StompJS`: 웹소켓 폴백 및 STOMP 프로토콜 지원
+    -   `Yjs`, `y-webrtc`: 실시간 협업 및 데이터 동기화 (P2P WebRTC)
+-   **유틸리티**:
+    -   `html2canvas`: HTML 요소를 캡처하여 이미지로 변환 (결과 공유 기능)
+-   **개발 도구**:
+    -   `ESLint`: 코드 품질 및 스타일 유지
+    -   `@vitejs/plugin-react`: Vite에서 React 사용을 위한 플러그인
+    -   `@types/react`, `@types/react-dom`: TypeScript 타입 정의 (개발 편의성)
 
 ## 🚀 시작하기
 

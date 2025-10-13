@@ -64,6 +64,7 @@ const LobbyPage = () => {
             variant="outlined"
             color="secondary"
             size="large"
+            disabled={true}
             onClick={() => {
               const roomId = prompt("참여할 방의 ID를 입력하세요:");
               if (roomId) {
