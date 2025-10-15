@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { createRoomAPI, getRoomAPI } from '../lib/api';
-import { getSocket, joinRoom, subscribeToRoomUpdates, sendStateUpdate, sendJoinTeam, sendSwitchTeam } from '../lib/socket';
+import { getSocket, joinRoom, subscribeToRoomUpdates, sendStateUpdate, sendJoinTeam, sendSwitchTeam, sendReadyCheckStart, sendPlayerReady } from '../lib/socket';
 import { uid } from 'uid';
 
 const BANPICK_ORDER = [
@@ -137,6 +137,11 @@ export const useRoomStore = create((set, get) => ({
     sendSwitchTeam(roomId, myPlayerId);
   },
 
+  setPlayerReady: () => {
+    const { roomId, myPlayerId } = get();
+    sendPlayerReady(roomId, myPlayerId);
+  },
+
   // ✅ [수정됨] connectToRoom 함수
   connectToRoom: async (roomId) => {
     if (roomId === 'local') {
@@ -167,8 +172,8 @@ export const useRoomStore = create((set, get) => ({
     }
 
     getSocket();
-    // playerId를 함께 전달하도록 수정
-    joinRoom(roomId, playerId); 
+    const { name, team } = get();
+    joinRoom(roomId, playerId, name, team);
     subscribeToRoomUpdates(set);
   },
 }));

@@ -41,30 +41,34 @@ const StyledPlayerCard = styled(Card)(({ theme }) => ({
 }));
 
 // --- PlayerCard Component ---
-const PlayerStatus = ({ isReadyPhase, isReady, onReadyClick }) => {
+const PlayerStatus = ({ isReadyPhase, isReady, onReadyClick, isSelf }) => {
   if (isReadyPhase) {
-    return (
-      <Button
-        variant="contained"
-        size="small"
-        disabled={isReady}
-        onClick={onReadyClick}
-      >
-        {isReady ? "준비완료" : "준비"}
-      </Button>
-    );
+    if (isSelf) {
+      return (
+        <Button
+          variant="contained"
+          size="small"
+          color={isReady ? "success" : "primary"}
+          onClick={onReadyClick}
+        >
+          {isReady ? "준비완료" : "준비"}
+        </Button>
+      );
+    }
+    return <Chip label={isReady ? "준비완료" : "대기중"} color={isReady ? "success" : "default"} size="small" />;
   }
-  return <Chip label={isReady ? "준비완료" : "대기중"} color={isReady ? "success" : "default"} size="small" />;
+  return null; // 준비 단계가 아닐 때는 아무것도 표시하지 않음
 };
 
-const PlayerCard = ({ player, onReady, team, isReadyPhase }) => (
+const PlayerCard = ({ player, onReady, isReadyPhase, isSelf }) => (
   <StyledPlayerCard>
     <Typography variant="body1">{player ? player.name : '참가자 대기 중...'}</Typography>
     {player && (
         <PlayerStatus
             isReadyPhase={isReadyPhase}
             isReady={player.isReady}
-            onReadyClick={() => onReady(team, player.id)}
+            onReadyClick={onReady}
+            isSelf={isSelf}
         />
     )}
   </StyledPlayerCard>
@@ -119,6 +123,7 @@ function RoomPage() {
   };
 
   const myTeam = getMyTeam();
+  const { myPlayerId } = useRoomStore();
 
   if (!isConnected) {
     return <Typography sx={{ p: 4 }}>방 정보를 불러오는 중...</Typography>;
@@ -182,28 +187,36 @@ function RoomPage() {
         <Grid item xs={12} md={6}>
           <TeamPaper teamColor="blue">
             <TeamTitle variant="h5" teamColor="blue">{blueTeamName || '블루팀'}</TeamTitle>
-            <PlayerCard player={bluePlayer} onReady={setPlayerReady} team="blue" isReadyPhase={readyCheckStatus === 'in-progress'} />
+            <PlayerCard 
+              player={bluePlayer} 
+              onReady={setPlayerReady} 
+              isReadyPhase={blueTeamPlayers.length > 0 && redTeamPlayers.length > 0}
+              isSelf={bluePlayer && bluePlayer.id === myPlayerId}
+            />
           </TeamPaper>
         </Grid>
         <Grid item xs={12} md={6}>
           <TeamPaper teamColor="red">
             <TeamTitle variant="h5" teamColor="red">{redTeamName || '레드팀'}</TeamTitle>
-            <PlayerCard player={redPlayer} onReady={setPlayerReady} team="red" isReadyPhase={readyCheckStatus === 'in-progress'} />
+            <PlayerCard 
+              player={redPlayer} 
+              onReady={setPlayerReady} 
+              isReadyPhase={blueTeamPlayers.length > 0 && redTeamPlayers.length > 0}
+              isSelf={redPlayer && redPlayer.id === myPlayerId}
+            />
           </TeamPaper>
         </Grid>
       </Grid>
 
       <Box sx={{ textAlign: 'center', mt: 4 }}>
         {readyCheckStatus === 'all-ready' ? (
-            <Typography variant="h5" color="primary">모두 준비 완료! 잠시 후 게임을 시작합니다...</Typography>
+          <Typography variant="h5" color="primary">모두 준비 완료! 잠시 후 게임을 시작합니다...</Typography>
         ) : (
-            <Button 
-                variant="contained" 
-                size="large" 
-                onClick={startReadyCheck}
-            >
-                게임 시작
-            </Button>
+          <Typography variant="h6" color="text.secondary">
+            {blueTeamPlayers.length > 0 && redTeamPlayers.length > 0 
+              ? '모든 플레이어가 준비하면 게임이 시작됩니다...' 
+              : '상대 팀 플레이어를 기다리고 있습니다...'}
+          </Typography>
         )}
       </Box>
     </Container>

@@ -20,15 +20,14 @@ export const getSocket = () => {
  * @param {string} roomId - 참여할 방의 ID
  * @param {string} playerId - 참여하는 플레이어의 ID
  */
-export const joinRoom = (roomId, playerId) => {
+export const joinRoom = (roomId, playerId, name, team) => {
   const currentSocket = getSocket();
-  // roomId와 playerId를 객체로 묶어서 전송합니다.
-  currentSocket.emit('joinRoom', { roomId, playerId });
-  console.log(`Attempting to join room: ${roomId} as player: ${playerId}`);
+  currentSocket.emit('joinRoom', { roomId, playerId, name, team });
+  console.log(`Attempting to join room: ${roomId} as player: ${playerId} with name: ${name} and team: ${team}`);
 };
 
 export const sendJoinTeam = (roomId, team, player) => {
-  getSocket().emit('joinTeam', { roomId, team, player });
+  getSocket().emit('joinRoom', { roomId, team, name: player.name, playerId: player.id });
 };
 
 export const sendSwitchTeam = (roomId, playerId) => {
@@ -37,6 +36,14 @@ export const sendSwitchTeam = (roomId, playerId) => {
 
 export const sendStateUpdate = (roomId, partialState) => {
   getSocket().emit('updateState', { room: roomId, state: partialState });
+};
+
+export const sendReadyCheckStart = (roomId) => {
+  getSocket().emit('startReadyCheck', { roomId });
+};
+
+export const sendPlayerReady = (roomId, playerId) => {
+  getSocket().emit('setReady', { roomId, playerId });
 };
 
 export const subscribeToRoomUpdates = (callback) => {
