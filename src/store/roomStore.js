@@ -1,8 +1,22 @@
-// src/store/roomStore.js
-
 import { create } from 'zustand';
 import { createRoomAPI, getRoomAPI } from '../lib/api';
-import { getSocket, joinRoom, subscribeToRoomUpdates, sendStateUpdate, sendJoinTeam, sendSwitchTeam, sendReadyCheckStart, sendPlayerReady } from '../lib/socket';
+import { 
+  getSocket, 
+  joinRoom, 
+  subscribeToRoomUpdates, 
+  sendJoinTeam, 
+  sendSwitchTeam, 
+  sendChangeReadyState, 
+  subscribeToReadyStateChanged, 
+  sendStartDraft,
+  subscribeToDraftStarted,
+  sendSelectChampion,
+  sendConfirmSelection,
+  subscribeToChampionSelected,
+  subscribeToPhaseProgressed,
+  sendConfirmResult,
+  subscribeToGameResultConfirmed
+} from '../lib/socket';
 import { uid } from 'uid';
 
 const BANPICK_ORDER = [
@@ -43,11 +57,30 @@ const initialState = {
   isConnected: false,
   roomId: null,
   myPlayerId: null,
+  hostId: null,
+  draftStarted: false,
+  currentSelection: null, // Add new state for temporary selection
+  champions: [],
 };
 
 
 export const useRoomStore = create((set, get) => ({
   ...initialState,
+
+  fetchChampions: async () => {
+    try {
+        const res = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
+        const versions = await res.json();
+        const latest = versions[0];
+        const champRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latest}/data/ko_KR/champion.json`);
+        const champData = await champRes.json();
+        const champArray = Object.values(champData.data).map((c) => ({ id: c.id, name: c.name, image: `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${c.image.full}`, tags: c.tags }));
+        champArray.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+        set({ champions: champArray });
+    } catch (err) { 
+        console.error("챔피언 데이터 로딩 실패:", err); 
+    }
+  },
 
   createNewRoom: async (gameInfo) => {
     try {
@@ -93,27 +126,54 @@ export const useRoomStore = create((set, get) => ({
   },
   
   selectChampion: (champion) => {
-    const { roomId, turnIndex, myPlayerId } = get();
-    if (turnIndex >= BANPICK_ORDER.length) return;
-    if (roomId !== 'local' && !get().isMyTurn()) return;
-    
-    const updater = (state) => {
-      const currentTurn = BANPICK_ORDER[state.turnIndex];
-      const key = currentTurn.team === 'blue' ? (currentTurn.action === 'ban' ? 'blueBans' : 'bluePicks') : (currentTurn.action === 'ban' ? 'redBans' : 'redPicks');
-      return { [key]: [...state[key], champion], turnIndex: state.turnIndex + 1 };
-    };
-    roomId === 'local' ? set(updater) : sendStateUpdate(roomId, updater(get()));
+    const { roomId } = get();
+    if (get().turnIndex >= BANPICK_ORDER.length || !get().isMyTurn()) return;
+
+    if (roomId === 'local') {
+      set({ currentSelection: champion });
+    } else {
+      sendSelectChampion(roomId, champion);
+    }
   },
-  
+
+
   finishGame: ({ winner }) => {
-    const updater = (state) => {
-      const { gameSeries, bluePicks, redPicks, blueBans, redBans, banMode, fearlessPicks } = state;
-      const finishedGame = { bluePicks, redPicks, blueBans, redBans, winner };
-      const newGameSeries = { ...gameSeries, games: [...gameSeries.games, finishedGame], blueWins: gameSeries.blueWins + (winner === "blue" ? 1 : 0), redWins: gameSeries.redWins + (winner === "red" ? 1 : 0), currentGame: gameSeries.currentGame + 1 };
-      const newFearlessPicks = banMode === 'fearless' ? [...(fearlessPicks || []), ...bluePicks, ...redPicks].filter(Boolean) : (fearlessPicks || []);
-      return { gameSeries: newGameSeries, fearlessPicks: newFearlessPicks, turnIndex: 0, blueBans: [], redBans: [], bluePicks: [], redPicks: [], swapRequest: null };
-    };
-    get().roomId === 'local' ? set(updater) : updateStateAndNotify(set, get, updater);
+    const { roomId } = get();
+    if (roomId === 'local') {
+      const updater = (state) => {
+        const { gameSeries, bluePicks, redPicks, blueBans, redBans, banMode, fearlessPicks } = state;
+        const finishedGame = { bluePicks, redPicks, blueBans, redBans, winner };
+        const newGameSeries = { ...gameSeries, games: [...gameSeries.games, finishedGame], blueWins: gameSeries.blueWins + (winner === "blue" ? 1 : 0), redWins: gameSeries.redWins + (winner === "red" ? 1 : 0), currentGame: gameSeries.currentGame + 1 };
+        const newFearlessPicks = banMode === 'fearless' ? [...(fearlessPicks || []), ...bluePicks, ...redPicks].filter(Boolean) : (fearlessPicks || []);
+        return { gameSeries: newGameSeries, fearlessPicks: newFearlessPicks, turnIndex: 0, blueBans: [], redBans: [], bluePicks: [], redPicks: [], swapRequest: null };
+      };
+      set(updater);
+    } else {
+      sendConfirmResult(roomId, winner);
+    }
+  },
+
+  confirmSelection: () => {
+    const { roomId, currentSelection } = get();
+    if (!currentSelection) return;
+
+    if (roomId === 'local') {
+      const championToConfirm = currentSelection;
+      set((state) => {
+        const currentTurn = BANPICK_ORDER[state.turnIndex];
+        const key = currentTurn.team === 'blue' 
+          ? (currentTurn.action === 'ban' ? 'blueBans' : 'bluePicks') 
+          : (currentTurn.action === 'ban' ? 'redBans' : 'redPicks');
+        
+        return {
+          turnIndex: state.turnIndex + 1,
+          [key]: [...(state[key] || []), championToConfirm],
+          currentSelection: null,
+        };
+      });
+    } else {
+      sendConfirmSelection(roomId);
+    }
   },
 
   resetRoomState: () => set(initialState),
@@ -137,12 +197,20 @@ export const useRoomStore = create((set, get) => ({
     sendSwitchTeam(roomId, myPlayerId);
   },
 
-  setPlayerReady: () => {
-    const { roomId, myPlayerId } = get();
-    sendPlayerReady(roomId, myPlayerId);
+  setReadyState: (isReady) => {
+    const { roomId } = get();
+    if (roomId !== 'local') {
+      sendChangeReadyState(roomId, isReady);
+    }
   },
 
-  // ✅ [수정됨] connectToRoom 함수
+  startDraft: () => {
+    const { roomId } = get();
+    if (roomId !== 'local') {
+      sendStartDraft(roomId);
+    }
+  },
+
   connectToRoom: async (roomId) => {
     if (roomId === 'local') {
       set({ roomId: 'local', isConnected: true });
@@ -172,8 +240,87 @@ export const useRoomStore = create((set, get) => ({
     }
 
     getSocket();
-    const { name, team } = get();
-    joinRoom(roomId, playerId, name, team);
+    const freshState = get();
+    const allPlayers = [...(freshState.blueTeamPlayers || []), ...(freshState.redTeamPlayers || [])];
+    const myPlayerObject = allPlayers.find(p => p.id === freshState.myPlayerId);
+    const myName = myPlayerObject ? myPlayerObject.name : null;
+    let myTeam = null;
+    if (myPlayerObject) {
+        if (freshState.blueTeamPlayers.some(p => p.id === freshState.myPlayerId)) {
+            myTeam = 'blue';
+        } else if (freshState.redTeamPlayers.some(p => p.id === freshState.myPlayerId)) {
+            myTeam = 'red';
+        }
+    }
+    joinRoom(roomId, freshState.myPlayerId, myName, myTeam);
+    
     subscribeToRoomUpdates(set);
+    subscribeToChampionSelected((data) => {
+      const { champions } = get();
+      let championObject = null;
+
+      // Check if the champion object is nested inside the data object
+      const potentialChampion = (data && data.champion) ? data.champion : data;
+
+      if (typeof potentialChampion === 'string') {
+        championObject = champions.find(c => c.id === potentialChampion || c.name === potentialChampion);
+      } else if (typeof potentialChampion === 'object' && potentialChampion !== null && potentialChampion.id) {
+        championObject = potentialChampion;
+      }
+      
+      if (championObject) {
+        set({ currentSelection: championObject });
+      } else {
+        console.error("Received champion data could not be processed:", data);
+      }
+    });
+    subscribeToPhaseProgressed((data) => {
+      console.log('Phase progressed, server confirmed:', data);
+      set((state) => {
+        const { fromPhase, confirmedChampion } = data;
+        const turn = BANPICK_ORDER[fromPhase];
+        if (!turn) return {};
+
+        const key = turn.team === 'blue' 
+          ? (turn.action === 'ban' ? 'blueBans' : 'bluePicks') 
+          : (turn.action === 'ban' ? 'redBans' : 'redPicks');
+        
+        const currentSlot = state[key] || [];
+
+        return {
+          turnIndex: state.turnIndex + 1,
+          [key]: [...currentSlot, confirmedChampion],
+          currentSelection: null,
+        };
+      });
+    });
+
+    subscribeToReadyStateChanged((data) => {
+        set((state) => {
+            const findAndUpdate = (players) => {
+                return players.map(p => {
+                    if (p.name === data.nickname) {
+                        return { ...p, isReady: data.isReady };
+                    }
+                    return p;
+                });
+            };
+            return {
+                blueTeamPlayers: findAndUpdate(state.blueTeamPlayers),
+                redTeamPlayers: findAndUpdate(state.redTeamPlayers),
+            };
+        });
+    });
+
+
+
+    subscribeToDraftStarted((data) => {
+        set({ draftStarted: true });
+    });
+
+    subscribeToGameResultConfirmed((data) => {
+        console.log('Game result confirmed by server:', data);
+        // The updateState event will handle the UI refresh
+    });
   },
 }));

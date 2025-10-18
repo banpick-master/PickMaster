@@ -88,8 +88,10 @@ function RoomPage() {
     redTeamPlayers,
     readyCheckStatus,
     joinTeam,
-    setPlayerReady,
-    startReadyCheck,
+    setReadyState,
+    startDraft,
+    draftStarted,
+    hostId,
     resetReadyCheck,
     isConnected,
     getMyTeam,
@@ -106,14 +108,13 @@ function RoomPage() {
     return () => {};
   }, [roomId, connectToRoom]);
 
+
+
   useEffect(() => {
-    if (readyCheckStatus === 'all-ready') {
-      const timer = setTimeout(() => {
-        navigate(`/game/${roomId}`);
-      }, 1500);
-      return () => clearTimeout(timer);
+    if (draftStarted) {
+      navigate(`/game/${roomId}`);
     }
-  }, [readyCheckStatus, navigate, roomId]);
+  }, [draftStarted, navigate, roomId]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -183,34 +184,48 @@ function RoomPage() {
         </Stack>
       </Paper>
 
-      <Grid container spacing={4} alignItems="stretch">
-        <Grid item xs={12} md={6}>
-          <TeamPaper teamColor="blue">
-            <TeamTitle variant="h5" teamColor="blue">{blueTeamName || '블루팀'}</TeamTitle>
-            <PlayerCard 
-              player={bluePlayer} 
-              onReady={setPlayerReady} 
-              isReadyPhase={blueTeamPlayers.length > 0 && redTeamPlayers.length > 0}
-              isSelf={bluePlayer && bluePlayer.id === myPlayerId}
-            />
-          </TeamPaper>
+      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Grid container spacing={4} alignItems="stretch" sx={{ maxWidth: '1200px', width: '100%' }}>
+          <Grid item xs={12} md={6}>
+            <TeamPaper teamColor="blue">
+              <TeamTitle variant="h5" teamColor="blue">{blueTeamName || '블루팀'}</TeamTitle>
+              <PlayerCard 
+                player={bluePlayer} 
+                onReady={() => bluePlayer && setReadyState(!bluePlayer.isReady)} 
+                isReadyPhase={blueTeamPlayers.length > 0 && redTeamPlayers.length > 0}
+                isSelf={bluePlayer && bluePlayer.id === myPlayerId}
+              />
+            </TeamPaper>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TeamPaper teamColor="red">
+              <TeamTitle variant="h5" teamColor="red">{redTeamName || '레드팀'}</TeamTitle>
+              <PlayerCard 
+                player={redPlayer} 
+                onReady={() => redPlayer && setReadyState(!redPlayer.isReady)} 
+                isReadyPhase={blueTeamPlayers.length > 0 && redTeamPlayers.length > 0}
+                isSelf={redPlayer && redPlayer.id === myPlayerId}
+              />
+            </TeamPaper>
+          </Grid>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <TeamPaper teamColor="red">
-            <TeamTitle variant="h5" teamColor="red">{redTeamName || '레드팀'}</TeamTitle>
-            <PlayerCard 
-              player={redPlayer} 
-              onReady={setPlayerReady} 
-              isReadyPhase={blueTeamPlayers.length > 0 && redTeamPlayers.length > 0}
-              isSelf={redPlayer && redPlayer.id === myPlayerId}
-            />
-          </TeamPaper>
-        </Grid>
-      </Grid>
+      </Box>
 
       <Box sx={{ textAlign: 'center', mt: 4 }}>
+        {myPlayerId === hostId && (
+          <Button
+            variant="contained"
+            size="large"
+            onClick={startDraft}
+            disabled={readyCheckStatus !== 'all-ready'}
+            sx={{ mb: 2 }}
+          >
+            드래프트 시작
+          </Button>
+        )}
+
         {readyCheckStatus === 'all-ready' ? (
-          <Typography variant="h5" color="primary">모두 준비 완료! 잠시 후 게임을 시작합니다...</Typography>
+          <Typography variant="h5" color="primary">모두 준비 완료! 호스트가 게임을 시작하기를 기다리고 있습니다...</Typography>
         ) : (
           <Typography variant="h6" color="text.secondary">
             {blueTeamPlayers.length > 0 && redTeamPlayers.length > 0 
