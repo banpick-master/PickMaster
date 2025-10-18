@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Routes, Route } from "react-router-dom";
+import { useRoomStore } from './store/roomStore';
 import  LobbyPage  from "./pages/LobbyPage";  // 방 목록 페이지  
 import GameBanPickPage from "./pages/GameBanPickPage";
 import SpectatorPage from "./pages/SpectatorPage";
@@ -7,6 +9,12 @@ import SeriesResultPage from "./pages/SeriesResultPage";
 import RoomPage from "./pages/RoomPage"; // 추가
 
 const App = () => {
+  const fetchChampions = useRoomStore((state) => state.fetchChampions);
+
+  useEffect(() => {
+    fetchChampions();
+  }, [fetchChampions]);
+
   return (
     <Routes>
       {/* 초기 페이지: 방 목록 */}

@@ -35,10 +35,10 @@ const GameBanPickPage = () => {
         connectToRoom, gameMode, gameSeries, blueTeamName, redTeamName, timerMode, banMode,
         turnIndex, blueBans, redBans, bluePicks, redPicks, swapRequest, fearlessPicks,
         selectChampion, handleSwapRequest, handleSwapAccept, handleSwapCancel, finishGame,
-        confirmSelection, currentSelection, isMyTurn
+        confirmSelection, currentSelection, isMyTurn,
+        champions
     } = useRoomStore();
 
-    const [champions, setChampions] = useState([]);
     const [gameWinnerSelected, setGameWinnerSelected] = useState(false);
 
     useEffect(() => {
@@ -46,22 +46,6 @@ const GameBanPickPage = () => {
             connectToRoom(roomId);
         }
     }, [roomId, connectToRoom]);
-
-    useEffect(() => {
-        const fetchChampions = async () => {
-            try {
-                const res = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
-                const versions = await res.json();
-                const latest = versions[0];
-                const champRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latest}/data/ko_KR/champion.json`);
-                const champData = await champRes.json();
-                const champArray = Object.values(champData.data).map((c) => ({ id: c.id, name: c.name, image: `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${c.image.full}`, tags: c.tags }));
-                champArray.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-                setChampions(champArray);
-            } catch (err) { console.error("챔피언 데이터 로딩 실패:", err); }
-        };
-        fetchChampions();
-    }, []);
     
     useEffect(() => {
         if (gameMode === 'single') return;
@@ -89,9 +73,8 @@ const GameBanPickPage = () => {
             ...bluePicks, ...redPicks, ...blueBans, ...redBans
         ].filter(Boolean).map(c => c.name));
 
-        if (banMode === 'fearless') {
-            fearlessPicks.forEach(champ => unselectable.add(champ.name));
-        }
+        fearlessPicks.forEach(champ => unselectable.add(champ.name));
+        
         return unselectable;
     };
 
@@ -109,10 +92,7 @@ const GameBanPickPage = () => {
         ) {
             const activeIndex = slots.findIndex(s => s === null);
             if (activeIndex !== -1) {
-                const champData = champions.find(c => c.id === currentSelection.champion);
-                if (champData) {
-                    slots[activeIndex] = { ...champData, isTemporary: true };
-                }
+                slots[activeIndex] = { ...currentSelection, isTemporary: true };
             }
         }
         return slots;
@@ -163,7 +143,7 @@ const GameBanPickPage = () => {
                                     <ChampionSelect champions={champions} onSelect={selectChampion} disabledChampions={getUnselectableChampionNames()} />
                                 </Box>
 
-                                {isMyTurn() && currentSelection && currentSelection.phase === turnIndex && (
+                                {isMyTurn() && currentSelection && (
                                     <Button 
                                         variant="contained" 
                                         color="primary" 

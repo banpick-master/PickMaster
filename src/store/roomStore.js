@@ -60,11 +60,27 @@ const initialState = {
   hostId: null,
   draftStarted: false,
   currentSelection: null, // Add new state for temporary selection
+  champions: [],
 };
 
 
 export const useRoomStore = create((set, get) => ({
   ...initialState,
+
+  fetchChampions: async () => {
+    try {
+        const res = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
+        const versions = await res.json();
+        const latest = versions[0];
+        const champRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latest}/data/ko_KR/champion.json`);
+        const champData = await champRes.json();
+        const champArray = Object.values(champData.data).map((c) => ({ id: c.id, name: c.name, image: `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${c.image.full}`, tags: c.tags }));
+        champArray.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+        set({ champions: champArray });
+    } catch (err) { 
+        console.error("챔피언 데이터 로딩 실패:", err); 
+    }
+  },
 
   createNewRoom: async (gameInfo) => {
     try {
@@ -110,17 +126,11 @@ export const useRoomStore = create((set, get) => ({
   },
   
   selectChampion: (champion) => {
-    const { roomId, turnIndex } = get();
-    if (turnIndex >= BANPICK_ORDER.length) return;
+    const { roomId } = get();
+    if (get().turnIndex >= BANPICK_ORDER.length || !get().isMyTurn()) return;
 
     if (roomId === 'local') {
-      if (!get().isMyTurn()) return;
-      const updater = (state) => {
-        const currentTurn = BANPICK_ORDER[state.turnIndex];
-        const key = currentTurn.team === 'blue' ? (currentTurn.action === 'ban' ? 'blueBans' : 'bluePicks') : (currentTurn.action === 'ban' ? 'redBans' : 'redPicks');
-        return { [key]: [...state[key], champion], turnIndex: state.turnIndex + 1 };
-      };
-      set(updater);
+      set({ currentSelection: champion });
     } else {
       sendSelectChampion(roomId, champion);
     }
@@ -144,8 +154,24 @@ export const useRoomStore = create((set, get) => ({
   },
 
   confirmSelection: () => {
-    const { roomId } = get();
-    if (roomId !== 'local') {
+    const { roomId, currentSelection } = get();
+    if (!currentSelection) return;
+
+    if (roomId === 'local') {
+      const championToConfirm = currentSelection;
+      set((state) => {
+        const currentTurn = BANPICK_ORDER[state.turnIndex];
+        const key = currentTurn.team === 'blue' 
+          ? (currentTurn.action === 'ban' ? 'blueBans' : 'bluePicks') 
+          : (currentTurn.action === 'ban' ? 'redBans' : 'redPicks');
+        
+        return {
+          turnIndex: state.turnIndex + 1,
+          [key]: [...(state[key] || []), championToConfirm],
+          currentSelection: null,
+        };
+      });
+    } else {
       sendConfirmSelection(roomId);
     }
   },
@@ -214,11 +240,40 @@ export const useRoomStore = create((set, get) => ({
     }
 
     getSocket();
-    const { name, team } = get();
-    joinRoom(get().myPlayerId, name, team, roomId);
+    const freshState = get();
+    const allPlayers = [...(freshState.blueTeamPlayers || []), ...(freshState.redTeamPlayers || [])];
+    const myPlayerObject = allPlayers.find(p => p.id === freshState.myPlayerId);
+    const myName = myPlayerObject ? myPlayerObject.name : null;
+    let myTeam = null;
+    if (myPlayerObject) {
+        if (freshState.blueTeamPlayers.some(p => p.id === freshState.myPlayerId)) {
+            myTeam = 'blue';
+        } else if (freshState.redTeamPlayers.some(p => p.id === freshState.myPlayerId)) {
+            myTeam = 'red';
+        }
+    }
+    joinRoom(roomId, freshState.myPlayerId, myName, myTeam);
     
     subscribeToRoomUpdates(set);
-    subscribeToChampionSelected((data) => set({ currentSelection: data }));
+    subscribeToChampionSelected((data) => {
+      const { champions } = get();
+      let championObject = null;
+
+      // Check if the champion object is nested inside the data object
+      const potentialChampion = (data && data.champion) ? data.champion : data;
+
+      if (typeof potentialChampion === 'string') {
+        championObject = champions.find(c => c.id === potentialChampion || c.name === potentialChampion);
+      } else if (typeof potentialChampion === 'object' && potentialChampion !== null && potentialChampion.id) {
+        championObject = potentialChampion;
+      }
+      
+      if (championObject) {
+        set({ currentSelection: championObject });
+      } else {
+        console.error("Received champion data could not be processed:", data);
+      }
+    });
     subscribeToPhaseProgressed((data) => {
       console.log('Phase progressed, server confirmed:', data);
       set((state) => {
@@ -235,6 +290,7 @@ export const useRoomStore = create((set, get) => ({
         return {
           turnIndex: state.turnIndex + 1,
           [key]: [...currentSlot, confirmedChampion],
+          currentSelection: null,
         };
       });
     });

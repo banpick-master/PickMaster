@@ -1,8 +1,8 @@
 import {
   WebSocketGateway,
   SubscribeMessage,
-  MessageBody,
   WebSocketServer,
+  MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -12,16 +12,16 @@ import { ChangeReadyStateDto } from './dto/change-ready-state.dto';
 import { ConfirmResultDto } from './dto/confirm-result.dto';
 
 const BANPICK_ORDER = [
-    { team: "blue", action: "ban" }, { team: "red", action: "ban" },
-    { team: "blue", action: "ban" }, { team: "red", action: "ban" },
-    { team: "blue", action: "ban" }, { team: "red", action: "ban" },
-    { team: "blue", action: "pick" }, { team: "red", action: "pick" },
-    { team: "red", action: "pick" }, { team: "blue", action: "pick" },
-    { team: "blue", action: "pick" }, { team: "red", action: "pick" },
-    { team: "red", action: "ban" }, { team: "blue", action: "ban" },
-    { team: "red", action: "ban" }, { team: "blue", action: "ban" },
-    { team: "red", action: "pick" }, { team: "blue", action: "pick" },
-    { team: "blue", action: "pick" }, { team: "red", action: "pick" },
+  { team: "blue", action: "ban" }, { team: "red", action: "ban" },
+  { team: "blue", action: "ban" }, { team: "red", action: "ban" },
+  { team: "blue", action: "ban" }, { team: "red", action: "ban" },
+  { team: "blue", action: "pick" }, { team: "red", action: "pick" },
+  { team: "red", action: "pick" }, { team: "blue", action: "pick" },
+  { team: "blue", action: "pick" }, { team: "red", action: "pick" },
+  { team: "red", action: "ban" }, { team: "blue", action: "ban" },
+  { team: "red", action: "ban" }, { team: "blue", action: "ban" },
+  { team: "red", action: "pick" }, { team: "blue", action: "pick" },
+  { team: "blue", action: "pick" }, { team: "red", action: "pick" },
 ];
 
 @WebSocketGateway({
@@ -51,16 +51,16 @@ export class EventsGateway {
     this.rooms[roomId].blueTeamPlayers.forEach((p) => (p.isReady = false));
     this.rooms[roomId].redTeamPlayers.forEach((p) => (p.isReady = false));
   }
-  
+
   private resetDraftState(roomId: string) {
-      const room = this.rooms[roomId];
-      if (!room) return;
-      room.turnIndex = 0;
-      room.blueBans = [];
-      room.redBans = [];
-      room.bluePicks = [];
-      room.redPicks = [];
-      room.currentSelection = null;
+    const room = this.rooms[roomId];
+    if (!room) return;
+    room.turnIndex = 0;
+    room.blueBans = [];
+    room.redBans = [];
+    room.bluePicks = [];
+    room.redPicks = [];
+    room.currentSelection = null;
   }
 
   @SubscribeMessage('join_game')
@@ -85,14 +85,15 @@ export class EventsGateway {
         redPicks: [],
         currentSelection: null,
         gameSeries: { blueWins: 0, redWins: 0, currentGame: 1 },
+        fearlessPicks: [],
       };
     }
-    
+
     if (playerId) {
-        this.rooms[roomId].playerMap[client.id] = playerId;
-        if (!this.rooms[roomId].hostId) {
-            this.rooms[roomId].hostId = playerId;
-        }
+      this.rooms[roomId].playerMap[client.id] = playerId;
+      if (!this.rooms[roomId].hostId) {
+        this.rooms[roomId].hostId = playerId;
+      }
     }
 
     if (team && name && playerId) {
@@ -272,28 +273,30 @@ export class EventsGateway {
     }
 
     if (winner === 'blue') {
-        room.gameSeries.blueWins++;
+      room.gameSeries.blueWins++;
     } else {
-        room.gameSeries.redWins++;
+      room.gameSeries.redWins++;
     }
     room.gameSeries.currentGame++;
 
+    const picksToArchive = [...room.bluePicks, ...room.redPicks].filter(Boolean);
+    room.fearlessPicks = [...(room.fearlessPicks || []), ...picksToArchive];
+
     const hostInfo = this.find_player_in_room(roomId, room.hostId);
-    
+
     this.server.to(roomId).emit('game_result_confirmed', {
-        gameCode: roomId,
-        confirmedBy: hostInfo ? hostInfo.player.name : 'Host',
-        winner: winner,
-        blueScore: room.gameSeries.blueWins,
-        redScore: room.gameSeries.redWins,
-        nextSetNumber: room.gameSeries.currentGame,
-        timestamp: Date.now(),
+      gameCode: roomId,
+      confirmedBy: hostInfo ? hostInfo.player.name : 'Host',
+      winner: winner,
+      blueScore: room.gameSeries.blueWins,
+      redScore: room.gameSeries.redWins,
+      nextSetNumber: room.gameSeries.currentGame,
+      timestamp: Date.now(),
     });
-    
+
     this.resetDraftState(roomId);
     this.server.to(roomId).emit('updateState', room);
   }
-
 
   @SubscribeMessage('disconnecting')
   handleDisconnecting(@ConnectedSocket() client: Socket): void {
