@@ -34,14 +34,14 @@ const GameBanPickPage = () => {
     const {
         connectToRoom, gameMode, gameSeries, blueTeamName, redTeamName, timerMode, banMode,
         turnIndex, blueBans, redBans, bluePicks, redPicks, swapRequest, fearlessPicks,
-        selectChampion, handleSwapRequest, handleSwapAccept, handleSwapCancel, finishGame
+        selectChampion, handleSwapRequest, handleSwapAccept, handleSwapCancel, finishGame,
+        confirmSelection, currentSelection, isMyTurn
     } = useRoomStore();
 
     const [champions, setChampions] = useState([]);
     const [gameWinnerSelected, setGameWinnerSelected] = useState(false);
 
     useEffect(() => {
-        // ▼▼▼ [수정됨] '함께하기' 모드일 때만 서버에 연결하도록 변경
         if (roomId !== 'local') {
             connectToRoom(roomId);
         }
@@ -65,7 +65,6 @@ const GameBanPickPage = () => {
     
     useEffect(() => {
         if (gameMode === 'single') return;
-        let winner = null;
         const requiredWins = gameMode === 'BO3' ? 2 : (gameMode === 'BO5' ? 3 : 1);
         if (gameSeries.blueWins === requiredWins || gameSeries.redWins === requiredWins) {
             navigate('/series-result', { state: { gameSeries, blueTeamName, redTeamName } });
@@ -85,26 +84,44 @@ const GameBanPickPage = () => {
         setGameWinnerSelected(true);
     };
 
-    // ▼▼▼ [수정됨] 피어리스 밴픽 로직을 확실하게 적용합니다.
     const getUnselectableChampionNames = () => {
-        console.log("getUnselectableChampionNames called.");
-        console.log("Current banMode:", banMode);
-        console.log("Current fearlessPicks:", fearlessPicks);
-
         const unselectable = new Set([
             ...bluePicks, ...redPicks, ...blueBans, ...redBans
         ].filter(Boolean).map(c => c.name));
 
         if (banMode === 'fearless') {
-            console.log("banMode is fearless. Adding fearlessPicks.");
             fearlessPicks.forEach(champ => unselectable.add(champ.name));
-        } else {
-            console.log("banMode is not fearless. Not adding fearlessPicks.");
         }
-        
-        console.log("Final unselectable champions:", Array.from(unselectable));
         return unselectable;
     };
+
+    const getAugmentedSlots = (team, action) => {
+        const originalSlots = action === 'pick' ? (team === 'blue' ? bluePicks : redPicks) : (team === 'blue' ? blueBans : redBans);
+        const slots = [...originalSlots];
+
+        const currentTurn = BANPICK_ORDER[turnIndex];
+        if (
+            currentSelection &&
+            !isBanpickFinished &&
+            currentTurn &&
+            currentTurn.team === team &&
+            currentTurn.action === action
+        ) {
+            const activeIndex = slots.findIndex(s => s === null);
+            if (activeIndex !== -1) {
+                const champData = champions.find(c => c.id === currentSelection.champion);
+                if (champData) {
+                    slots[activeIndex] = { ...champData, isTemporary: true };
+                }
+            }
+        }
+        return slots;
+    };
+
+    const augmentedBluePicks = getAugmentedSlots('blue', 'pick');
+    const augmentedRedPicks = getAugmentedSlots('red', 'pick');
+    const augmentedBlueBans = getAugmentedSlots('blue', 'ban');
+    const augmentedRedBans = getAugmentedSlots('red', 'ban');
     
     const renderSwapDialog = () => {
         // ... (수정 없음)
@@ -114,41 +131,54 @@ const GameBanPickPage = () => {
         <PageContainer maxWidth="xl">
             {renderSwapDialog()}
             <Box><SeriesScoreboard /></Box>
-            <MainGrid container spacing={2}>
-                <Grid item xs={12} md={2}><TeamSlot team="blue" bans={blueBans} picks={bluePicks} currentTurn={BANPICK_ORDER[turnIndex]} isBanpickFinished={isBanpickFinished} onSwap={handleSwapRequest} swapRequest={swapRequest} /></Grid>
-                <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    {isBanpickFinished ? (
-                        <BanPickCompletePaper elevation={3}>
-                            {gameWinnerSelected && gameMode !== 'single' ? (
-                                <>
-                                    <Typography variant="h4">게임 {gameSeries.currentGame - 1} 종료</Typography>
-                                    <Typography>다음 게임을 준비하세요.</Typography>
-                                </>
-                            ) : (
-                                <>
-                                    <Typography variant="h5" gutterBottom>밴픽 완료!</Typography>
-                                    <Typography variant="body1" sx={{ mb: 2 }}>승리 팀을 선택하세요.</Typography>
-                                    <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                                        <BlueTeamButton variant="contained" onClick={() => handleFinishGameWrapper('blue')}>{blueTeamName} 승리</BlueTeamButton>
-                                        <RedTeamButton variant="contained" onClick={() => handleFinishGameWrapper('red')}>{redTeamName} 승리</RedTeamButton>
-                                    </Box>
-                                    {gameMode === 'single' && (
-                                        <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2 }}>로비로 돌아가기</Button>
-                                    )}
-                                </>
-                            )}
-                        </BanPickCompletePaper>
-                    ) : (
-                        <Stack spacing={2} sx={{ height: '100%' }}>
-                            {roomId !== 'local' && timerMode !== 'infinite' && <TurnTimer key={turnIndex} />}
-                            <Box sx={{ flex: 1, minHeight: 0 }}>
-                                <ChampionSelect champions={champions} onSelect={selectChampion} disabledChampions={getUnselectableChampionNames()} />
-                            </Box>
-                        </Stack>
-                    )}
-                </Grid>
-                <Grid item xs={12} md={2}><TeamSlot team="red" bans={redBans} picks={redPicks} currentTurn={BANPICK_ORDER[turnIndex]} isBanpickFinished={isBanpickFinished} onSwap={handleSwapRequest} swapRequest={swapRequest} /></Grid>
-            </MainGrid>
+            <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
+                <MainGrid container spacing={2} sx={{ maxWidth: '1600px', width: '100%' }}>
+                    <Grid item xs={12} md={2}><TeamSlot team="blue" bans={augmentedBlueBans} picks={augmentedBluePicks} currentTurn={BANPICK_ORDER[turnIndex]} isBanpickFinished={isBanpickFinished} onSwap={handleSwapRequest} swapRequest={swapRequest} /></Grid>
+                    <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        {isBanpickFinished ? (
+                            <BanPickCompletePaper elevation={3}>
+                                {gameWinnerSelected && gameMode !== 'single' ? (
+                                    <>
+                                        <Typography variant="h4">게임 {gameSeries.currentGame - 1} 종료</Typography>
+                                        <Typography>다음 게임을 준비하세요.</Typography>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Typography variant="h5" gutterBottom>밴픽 완료!</Typography>
+                                        <Typography variant="body1" sx={{ mb: 2 }}>승리 팀을 선택하세요.</Typography>
+                                        <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                                            <BlueTeamButton variant="contained" onClick={() => handleFinishGameWrapper('blue')}>{blueTeamName} 승리</BlueTeamButton>
+                                            <RedTeamButton variant="contained" onClick={() => handleFinishGameWrapper('red')}>{redTeamName} 승리</RedTeamButton>
+                                        </Box>
+                                        {gameMode === 'single' && (
+                                            <Button variant="outlined" onClick={() => navigate('/')} sx={{ mt: 2 }}>로비로 돌아가기</Button>
+                                        )}
+                                    </>
+                                )}
+                            </BanPickCompletePaper>
+                        ) : (
+                            <Stack spacing={2} sx={{ height: '100%' }}>
+                                {roomId !== 'local' && timerMode !== 'infinite' && <TurnTimer key={turnIndex} />}
+                                <Box sx={{ flex: 1, minHeight: 0 }}>
+                                    <ChampionSelect champions={champions} onSelect={selectChampion} disabledChampions={getUnselectableChampionNames()} />
+                                </Box>
+
+                                {isMyTurn() && currentSelection && currentSelection.phase === turnIndex && (
+                                    <Button 
+                                        variant="contained" 
+                                        color="primary" 
+                                        onClick={confirmSelection}
+                                        sx={{ mt: 1 }}
+                                    >
+                                        {BANPICK_ORDER[turnIndex]?.action === 'ban' ? '챔피언 금지' : '챔피언 선택'}
+                                    </Button>
+                                )}
+                            </Stack>
+                        )}
+                    </Grid>
+                    <Grid item xs={12} md={2}><TeamSlot team="red" bans={augmentedRedBans} picks={augmentedRedPicks} currentTurn={BANPICK_ORDER[turnIndex]} isBanpickFinished={isBanpickFinished} onSwap={handleSwapRequest} swapRequest={swapRequest} /></Grid>
+                </MainGrid>
+            </Box>
         </PageContainer>
     );
 };

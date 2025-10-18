@@ -25,8 +25,8 @@ const TeamHeader = styled(Box, {
 }));
 
 const PickCardStyled = styled(Box, {
-  shouldForwardProp: (prop) => prop !== 'isCurrentTurn' && prop !== 'isSwapFrom' && prop !== 'champion',
-})(({ theme, isCurrentTurn, isSwapFrom, champion }) => ({
+  shouldForwardProp: (prop) => prop !== 'isCurrentTurn' && prop !== 'isSwapFrom' && prop !== 'champion' && prop !== 'isTemporary',
+})(({ theme, isCurrentTurn, isSwapFrom, champion, isTemporary }) => ({
   position: 'relative',
   height: '65px',
   backgroundColor: 'rgba(0,0,0,0.3)',
@@ -37,14 +37,15 @@ const PickCardStyled = styled(Box, {
   marginBottom: theme.spacing(1),
   cursor: champion ? 'pointer' : 'default',
   overflow: 'hidden',
+  opacity: isTemporary ? 0.7 : 1,
   '&:hover': {
     borderColor: champion ? theme.palette.primary.light : 'transparent',
   }
 }));
 
 const BanCardStyled = styled(Box, {
-  shouldForwardProp: (prop) => prop !== 'isCurrentTurn',
-})(({ theme, isCurrentTurn }) => ({
+  shouldForwardProp: (prop) => prop !== 'isCurrentTurn' && prop !== 'isTemporary',
+})(({ theme, isCurrentTurn, isTemporary }) => ({
   height: '40px',
   width: '40px',
   overflow: 'hidden',
@@ -53,6 +54,7 @@ const BanCardStyled = styled(Box, {
   borderRadius: theme.shape.borderRadius,
   boxShadow: isCurrentTurn ? `0 0 10px ${theme.palette.primary.main}70` : 'none',
   transition: 'all 0.2s ease-in-out',
+  opacity: isTemporary ? 0.7 : 1,
 }));
 
 
@@ -62,7 +64,7 @@ const PickCard = ({ champion, isCurrentTurn, team, index, onSwap, isSwapFrom }) 
   const handleClick = () => { if (champion) onSwap(team, index); };
 
   return (
-    <PickCardStyled onClick={handleClick} isCurrentTurn={isCurrentTurn} isSwapFrom={isSwapFrom} champion={champion}>
+    <PickCardStyled onClick={handleClick} isCurrentTurn={isCurrentTurn} isSwapFrom={isSwapFrom} champion={champion} isTemporary={champion?.isTemporary}>
       {champion ? (
         <img src={champion.image} alt={champion.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       ) : (
@@ -90,7 +92,7 @@ const PickCard = ({ champion, isCurrentTurn, team, index, onSwap, isSwapFrom }) 
 };
 
 const BanCard = ({ champion, isCurrentTurn }) => (
-  <BanCardStyled isCurrentTurn={isCurrentTurn}>
+  <BanCardStyled isCurrentTurn={isCurrentTurn} isTemporary={champion?.isTemporary}>
     {champion && (<img src={champion.image} alt={champion.name} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(80%)' }} />)}
   </BanCardStyled>
 );
