@@ -26,7 +26,9 @@ const BANPICK_ORDER = [
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: 'https://banpick-master-ab3e7.web.app',
+    methods: ['GET', 'POST'],
+    credentials: true,
   },
 })
 export class EventsGateway {

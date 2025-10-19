@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 // const URL = 'https://banpick-master-ab3e7.web.app';
-  const URL = 'https://asia-northeast3-banpick-master-ab3e7.cloudfunctions.net';
+  const URL = 'https://asia-northeast3-banpick-master-ab3e7.cloudfunctions.net/socket.io';
 export const socket = io(URL, {
   autoConnect: false,
 });
