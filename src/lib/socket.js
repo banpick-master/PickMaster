@@ -14,9 +14,9 @@ export const joinRoom = (roomId, playerId, name, team) => {
 };
 
 export const sendJoinTeam = (roomId, team, playerInfo) => {
-  socket.emit('join_team', { roomId, team, playerInfo });
+  const { id: playerId, name } = playerInfo;
+  socket.emit('join_game', { roomId, team, playerId, name });
 };
-
 export const sendSwitchTeam = (roomId, playerId) => {
   socket.emit('switchTeam', { roomId, playerId });
 };
