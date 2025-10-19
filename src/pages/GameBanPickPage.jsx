@@ -40,6 +40,8 @@ const GameBanPickPage = () => {
     } = useRoomStore();
 
     const [gameWinnerSelected, setGameWinnerSelected] = useState(false);
+    
+    // 이 페이지에서는 챔피언 데이터를 불러오는 useEffect가 필요 없습니다. App.jsx에서 이미 처리하고 있습니다.
 
     useEffect(() => {
         if (roomId !== 'local') {
@@ -56,10 +58,9 @@ const GameBanPickPage = () => {
     }, [gameSeries, blueTeamName, redTeamName, gameMode, navigate]);
 
     useEffect(() => {
-        if (gameSeries.currentGame > 1 && gameWinnerSelected) {
-            setGameWinnerSelected(false);
-        }
-    }, [gameSeries.currentGame, gameWinnerSelected]);
+        // 다음 게임 세트가 시작될 때, 승리팀 선택 상태를 초기화합니다.
+        setGameWinnerSelected(false);
+    }, [gameSeries.currentGame]);
 
     const isBanpickFinished = turnIndex >= BANPICK_ORDER.length;
 

@@ -1,115 +1,90 @@
-// src/lib/socket.js
-
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:3000';
-let socket;
+const URL = 'https://banpick-master-ab3e7.web.app';
 
-export const getSocket = () => {
-  if (!socket) {
-    socket = io(SOCKET_URL, {});
-    socket.on('connect', () => console.log('Socket.IO connected successfully:', socket.id));
-    socket.on('disconnect', (reason) => console.log('Socket.IO disconnected:', reason));
-    socket.on('connect_error', (error) => console.error('Socket.IO connection error:', error));
-  }
-  return socket;
-};
+export const socket = io(URL, {
+  autoConnect: false,
+  path: '/api/socket.io',
+});
+
+export const getSocket = () => socket;
 
 export const joinRoom = (roomId, playerId, name, team) => {
-  const currentSocket = getSocket();
-  currentSocket.emit('join_game', { roomId, playerId, name, team });
-  console.log(`Attempting to join room: ${roomId} as player: ${playerId} with name: ${name} and team: ${team}`);
+  socket.emit('join_game', { roomId, playerId, name, team });
 };
 
-export const sendJoinTeam = (roomId, team, player) => {
-  getSocket().emit('join_game', { roomId, team, name: player.name, playerId: player.id });
+export const sendJoinTeam = (roomId, team, playerInfo) => {
+  socket.emit('join_team', { roomId, team, playerInfo });
 };
 
 export const sendSwitchTeam = (roomId, playerId) => {
-  getSocket().emit('switchTeam', { roomId, playerId });
+  socket.emit('switchTeam', { roomId, playerId });
 };
 
 export const sendChangeReadyState = (roomId, isReady) => {
-  getSocket().emit('change_ready_state', { roomId, isReady });
-};
-
-export const sendSelectChampion = (roomId, champion) => {
-  getSocket().emit('select_champion', { roomId, champion });
-};
-
-export const sendConfirmSelection = (roomId) => {
-  getSocket().emit('confirm_selection', { roomId });
+  socket.emit('change_ready_state', { roomId, isReady });
 };
 
 export const sendStartDraft = (roomId) => {
-  getSocket().emit('start_draft', { roomId });
+  socket.emit('start_draft', { roomId });
+};
+
+export const sendSelectChampion = (roomId, champion) => {
+  socket.emit('select_champion', { roomId, champion });
+};
+
+export const sendConfirmSelection = (roomId) => {
+  socket.emit('confirm_selection', { roomId });
 };
 
 export const sendConfirmResult = (roomId, winner) => {
-  getSocket().emit('confirm_result', { roomId, winner });
+  socket.emit('confirm_result', { roomId, winner });
 };
 
-// --- Subscriptions ---
-
 export const subscribeToRoomUpdates = (callback) => {
-  const currentSocket = getSocket();
-  currentSocket.off('updateState');
-  currentSocket.on('updateState', (state) => {
-    console.log('Received state update from server:', state);
-    callback(state);
+  socket.on('updateState', (state) => {
+    callback((oldState) => ({ ...oldState, ...state }));
   });
 };
 
 export const subscribeToReadyStateChanged = (callback) => {
-    const currentSocket = getSocket();
-    currentSocket.off('ready_state_changed');
-    currentSocket.on('ready_state_changed', (data) => {
-        console.log('Received ready_state_changed event:', data);
-        callback(data);
-    });
-};
-
-export const subscribeToAllPlayersReady = (callback) => {
-    const currentSocket = getSocket();
-    currentSocket.off('all_players_ready');
-    currentSocket.on('all_players_ready', () => {
-        console.log('Received all_players_ready event');
-        callback();
-    });
-};
-
-export const subscribeToChampionSelected = (callback) => {
-    const currentSocket = getSocket();
-    currentSocket.off('champion_selected');
-    currentSocket.on('champion_selected', (data) => {
-        console.log('Received champion_selected event:', data);
-        callback(data);
-    });
-};
-
-export const subscribeToPhaseProgressed = (callback) => {
-    const currentSocket = getSocket();
-    currentSocket.off('phase_progressed');
-    currentSocket.on('phase_progressed', (data) => {
-        console.log('Received phase_progressed event:', data);
-        callback(data);
-    });
+  socket.on('ready_state_changed', (data) => {
+    callback(data);
+  });
 };
 
 export const subscribeToDraftStarted = (callback) => {
-    const currentSocket = getSocket();
-    currentSocket.off('draft_started');
-    currentSocket.on('draft_started', (data) => {
-        console.log('Received draft_started event:', data);
-        callback(data);
-    });
+  socket.on('draft_started', (data) => {
+    callback(data);
+  });
+};
+
+export const subscribeToChampionSelected = (callback) => {
+  socket.on('champion_selected', (data) => {
+    callback(data);
+  });
+};
+
+export const subscribeToPhaseProgressed = (callback) => {
+  socket.on('phase_progressed', (data) => {
+    callback(data);
+  });
 };
 
 export const subscribeToGameResultConfirmed = (callback) => {
-    const currentSocket = getSocket();
-    currentSocket.off('game_result_confirmed');
-    currentSocket.on('game_result_confirmed', (data) => {
-        console.log('Received game_result_confirmed event:', data);
-        callback(data);
-    });
+  socket.on('game_result_confirmed', (data) => {
+    callback(data);
+  });
 };
+
+socket.on('connect', () => {
+  console.log('Socket.IO connected');
+});
+
+socket.on('disconnect', () => {
+  console.log('Socket.IO disconnected');
+});
+
+socket.on('connect_error', (error) => {
+  console.error('Socket.IO connection error:', error);
+});

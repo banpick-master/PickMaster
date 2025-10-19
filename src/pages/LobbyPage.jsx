@@ -94,8 +94,8 @@ const LobbyPage = () => {
             개발자 GitHub
           </Link>
         </LinkGroup>
-        <Link href="https://open.kakao.com/o/sSE1QQqe" target="_blank" rel="noopener">
-          문의 및 피드백
+        <Link href="https://open.kakao.com/o/sZVtfOXh" target="_blank" rel="noopener">
+          문의 및  협업 환영
         </Link>
       </ContentWrapper>
     </Root>

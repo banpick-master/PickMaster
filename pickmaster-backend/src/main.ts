@@ -1,13 +1,38 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
+import express from 'express';
+import * as functions from 'firebase-functions';
+import { Server } from 'socket.io';
+import { createServer } from 'http';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+
+const server = express();
+const http = createServer(server);
+const io = new Server(http, {
+  cors: {
+    origin: true,
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+  path: '/api/socket.io',
+});
+
+export const createNestServer = async (expressInstance) => {
+  const app = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    new ExpressAdapter(expressInstance),
+  );
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
-  await app.listen(process.env.PORT ?? 3000);
-}
-bootstrap();
+
+};
+
+createNestServer(server)
+  .then(() => console.log('Nest Ready'))
+  .catch((err) => console.error('Nest broken', err));
+
+export const api = functions.https.onRequest(server);

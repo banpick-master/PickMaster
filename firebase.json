@@ -8,10 +8,18 @@
     ],
     "rewrites": [
       {
+        "source": "/api/**",
+        "function": "api"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
     ]
+  },
+  "functions": {
+    "source": "pickmaster-backend",
+    "runtime": "nodejs20"
   },
   "firestore": {
     "rules": "firestore.rules"
