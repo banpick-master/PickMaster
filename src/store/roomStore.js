@@ -171,15 +171,10 @@ const initialState = {
   },
 
   selectAndConfirmChampion: (champion) => {
-    alert(`Champion clicked: ${champion.name}`);
     const { roomId, turnIndex } = get();
-    if (roomId !== 'local' || turnIndex >= BANPICK_ORDER.length) {
-      alert(`Condition failed: roomId=${roomId}, turnIndex=${turnIndex}`);
-      return;
-    }
+    if (roomId !== 'local' || turnIndex >= BANPICK_ORDER.length) return;
 
     set((state) => {
-      alert('Updating state...');
       const currentTurn = BANPICK_ORDER[state.turnIndex];
       const key = currentTurn.team === 'blue'
         ? (currentTurn.action === 'ban' ? 'blueBans' : 'bluePicks')

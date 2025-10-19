@@ -39,7 +39,7 @@ export default function ModeSelectPage() {
         const newRoom = await createNewRoom(gameInfo);
         navigate(`/room/${newRoom.roomId}`);
       } catch (error) {
-        alert("방 만들기에 실패했습니다. 다시 시도해주세요.");
+        alert("방 만들기에 실패했습니다. 다시 시도해주세요." ,error);
       }
     }
   };
