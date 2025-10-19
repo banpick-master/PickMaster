@@ -33,7 +33,7 @@ export default function ModeSelectPage() {
     if (playMode === 'single') {
       // ▼▼▼ [수정됨] '혼자하기' 모드 시작 시 startGameSeries 함수를 호출합니다.
       startGameSeries(gameInfo);
-      navigate('/game/local');
+      navigate('/game/single-player');
     } else {
       try {
         const newRoom = await createNewRoom(gameInfo);

@@ -19,6 +19,8 @@ import {
 } from '../lib/socket';
 import { uid } from 'uid';
 
+import championData from '../data/champions.json';
+
 const BANPICK_ORDER = [
   { team: "blue", action: "ban" }, { team: "red", action: "ban" },
   { team: "blue", action: "ban" }, { team: "red", action: "ban" },
@@ -59,30 +61,20 @@ const initialState = {
   myPlayerId: null,
   hostId: null,
   draftStarted: false,
-  currentSelection: null, // Add new state for temporary selection
-  champions: [],
-};
-
-
-export const useRoomStore = create((set, get) => ({
-  ...initialState,
-
-  fetchChampions: async () => {
-    try {
-        const res = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
-        const versions = await res.json();
-        const latest = versions[0];
-        const champRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latest}/data/ko_KR/champion.json`);
-        const champData = await champRes.json();
-        const champArray = Object.values(champData.data).map((c) => ({ id: c.id, name: c.name, image: `https://ddragon.leagueoflegends.com/cdn/${latest}/img/champion/${c.image.full}`, tags: c.tags }));
+    currentSelection: null, // Add new state for temporary selection
+    champions: [],
+      isChampionDataLoaded: false,
+    };
+    
+    
+    export const useRoomStore = create((set, get) => ({
+      ...initialState,
+    
+      fetchChampions: () => {
+        const champArray = Object.values(championData.data).map((c) => ({ id: c.id, name: c.name, image: `https://ddragon.leagueoflegends.com/cdn/15.20.1/img/champion/${c.image.full}`, tags: c.tags }));
         champArray.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-        set({ champions: champArray });
-    } catch (err) { 
-        console.error("챔피언 데이터 로딩 실패:", err); 
-    }
-  },
-
-  createNewRoom: async (gameInfo) => {
+        set({ champions: champArray, isChampionDataLoaded: true });
+      },  createNewRoom: async (gameInfo) => {
     try {
       const { roomId } = await createRoomAPI(gameInfo);
       const myPlayerId = uid(16);
@@ -112,8 +104,10 @@ export const useRoomStore = create((set, get) => ({
   },
   
   startGameSeries: (info) => {
-    set({
+    set((state) => ({
       ...initialState,
+      champions: state.champions,
+      isChampionDataLoaded: state.isChampionDataLoaded,
       gameName: info.gameName,
       blueTeamName: info.blueName,
       redTeamName: info.redName,
@@ -122,7 +116,7 @@ export const useRoomStore = create((set, get) => ({
       banMode: 'fearless',
       roomId: 'local',
       isConnected: true,
-    });
+    }));
   },
   
   selectChampion: (champion) => {
@@ -174,6 +168,28 @@ export const useRoomStore = create((set, get) => ({
     } else {
       sendConfirmSelection(roomId);
     }
+  },
+
+  selectAndConfirmChampion: (champion) => {
+    alert(`Champion clicked: ${champion.name}`);
+    const { roomId, turnIndex } = get();
+    if (roomId !== 'local' || turnIndex >= BANPICK_ORDER.length) {
+      alert(`Condition failed: roomId=${roomId}, turnIndex=${turnIndex}`);
+      return;
+    }
+
+    set((state) => {
+      alert('Updating state...');
+      const currentTurn = BANPICK_ORDER[state.turnIndex];
+      const key = currentTurn.team === 'blue'
+        ? (currentTurn.action === 'ban' ? 'blueBans' : 'bluePicks')
+        : (currentTurn.action === 'ban' ? 'redBans' : 'redPicks');
+
+      return {
+        turnIndex: state.turnIndex + 1,
+        [key]: [...(state[key] || []), champion],
+      };
+    });
   },
 
   resetRoomState: () => set(initialState),
