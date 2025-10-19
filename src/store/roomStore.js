@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createRoomAPI, getRoomAPI } from '../lib/api';
 import { 
-  getSocket, 
+  socket, 
   joinRoom, 
   subscribeToRoomUpdates, 
   sendJoinTeam, 
@@ -239,6 +239,8 @@ const initialState = {
       }
     } catch (error) { console.error("방 상태를 가져오는 데 실패했습니다:", error); set({ isConnected: false }); return; }
     
+    socket.connect();
+
     let playerId = get().myPlayerId;
     if (!playerId) {
       try {
@@ -250,7 +252,6 @@ const initialState = {
       } catch (e) { localStorage.removeItem(LOCAL_STORAGE_KEY); }
     }
 
-    getSocket();
     const freshState = get();
     const allPlayers = [...(freshState.blueTeamPlayers || []), ...(freshState.redTeamPlayers || [])];
     const myPlayerObject = allPlayers.find(p => p.id === freshState.myPlayerId);

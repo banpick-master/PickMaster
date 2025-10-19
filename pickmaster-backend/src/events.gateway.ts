@@ -84,7 +84,7 @@ export class EventsGateway {
         bluePicks: [],
         redPicks: [],
         currentSelection: null,
-        gameSeries: { blueWins: 0, redWins: 0, currentGame: 1 },
+        gameSeries: { games: [], blueWins: 0, redWins: 0, currentGame: 1 },
         fearlessPicks: [],
       };
     }
@@ -283,6 +283,15 @@ export class EventsGateway {
     room.fearlessPicks = [...(room.fearlessPicks || []), ...picksToArchive];
 
     const hostInfo = this.find_player_in_room(roomId, room.hostId);
+
+    const finishedGame = {
+      bluePicks: room.bluePicks,
+      redPicks: room.redPicks,
+      blueBans: room.blueBans,
+      redBans: room.redBans,
+      winner: winner,
+    };
+    room.gameSeries.games.push(finishedGame);
 
     this.server.to(roomId).emit('game_result_confirmed', {
       gameCode: roomId,
