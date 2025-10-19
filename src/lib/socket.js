@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
-const URL = 'https://banpick-master-ab3e7.web.app';
-
+// const URL = 'https://banpick-master-ab3e7.web.app';
+  const URL = 'http://localhost:3000';
 export const socket = io(URL, {
   autoConnect: false,
   path: '/api/socket.io',

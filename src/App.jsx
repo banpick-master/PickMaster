@@ -9,24 +9,16 @@ import SeriesResultPage from "./pages/SeriesResultPage";
 import RoomPage from "./pages/RoomPage"; // 추가
 import SinglePlayerGamePage from "./pages/SinglePlayerGamePage";
 
-import { Box, CircularProgress, Typography } from "@mui/material";
+
 
 const App = () => {
   const fetchChampions = useRoomStore((state) => state.fetchChampions);
-  const isChampionDataLoaded = useRoomStore((state) => state.isChampionDataLoaded);
 
   useEffect(() => {
     fetchChampions();
   }, [fetchChampions]);
 
-  // if (!isChampionDataLoaded) {
-  //   return (
-  //     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-  //       <CircularProgress />
-  //       <Typography> 챔피언 데이터를 불러오는 중입니다...</Typography>
-  //     </Box>
-  //   );
-  // }
+
 
   return (
     <Routes>
