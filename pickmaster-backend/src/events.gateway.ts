@@ -10,6 +10,7 @@ import { JoinGameDto } from './dto/join-game.dto';
 import { SelectChampionDto } from './dto/select-champion.dto';
 import { ChangeReadyStateDto } from './dto/change-ready-state.dto';
 import { ConfirmResultDto } from './dto/confirm-result.dto';
+import { AppService } from './app.service';
 
 const BANPICK_ORDER = [
   { team: "blue", action: "ban" }, { team: "red", action: "ban" },
@@ -32,6 +33,8 @@ const BANPICK_ORDER = [
   },
 })
 export class EventsGateway {
+  constructor(private readonly appService: AppService) {}
+
   @WebSocketServer()
   server: Server;
 
@@ -66,29 +69,55 @@ export class EventsGateway {
   }
 
   @SubscribeMessage('join_game')
-  handleJoinRoom(
+  async handleJoinRoom(
     @MessageBody() data: JoinGameDto,
     @ConnectedSocket() client: Socket,
-  ): void {
+  ): Promise<void> {
     const { roomId, team, name, playerId } = data;
     client.join(roomId);
 
     if (!this.rooms[roomId]) {
-      this.rooms[roomId] = {
-        playerMap: {},
-        hostId: null,
-        blueTeamPlayers: [],
-        redTeamPlayers: [],
-        readyCheckStatus: 'idle',
-        turnIndex: 0,
-        blueBans: [],
-        redBans: [],
-        bluePicks: [],
-        redPicks: [],
-        currentSelection: null,
-        gameSeries: { games: [], blueWins: 0, redWins: 0, currentGame: 1 },
-        fearlessPicks: [],
-      };
+      const roomFromDb = await this.appService.getRoom(roomId);
+      if (roomFromDb) {
+        let seriesLength = 1;
+        if (roomFromDb.gameMode === 'bo3') {
+          seriesLength = 3;
+        } else if (roomFromDb.gameMode === 'bo5') {
+          seriesLength = 5;
+        }
+        this.rooms[roomId] = {
+          playerMap: {},
+          hostId: null,
+          blueTeamPlayers: [],
+          redTeamPlayers: [],
+          readyCheckStatus: 'idle',
+          turnIndex: 0,
+          blueBans: [],
+          redBans: [],
+          bluePicks: [],
+          redPicks: [],
+          currentSelection: null,
+          gameSeries: { games: [], blueWins: 0, redWins: 0, currentGame: 1, seriesLength: seriesLength },
+          fearlessPicks: [],
+        };
+      } else {
+        // Fallback to default if room not in DB
+        this.rooms[roomId] = {
+          playerMap: {},
+          hostId: null,
+          blueTeamPlayers: [],
+          redTeamPlayers: [],
+          readyCheckStatus: 'idle',
+          turnIndex: 0,
+          blueBans: [],
+          redBans: [],
+          bluePicks: [],
+          redPicks: [],
+          currentSelection: null,
+          gameSeries: { games: [], blueWins: 0, redWins: 0, currentGame: 1, seriesLength: 1 },
+          fearlessPicks: [],
+        };
+      }
     }
 
     if (playerId) {
@@ -173,11 +202,16 @@ export class EventsGateway {
 
   @SubscribeMessage('start_draft')
   handleStartDraft(
-    @MessageBody() { roomId }: { roomId: string },
+    @MessageBody() { roomId, series }: { roomId: string, series?: number },
     @ConnectedSocket() client: Socket,
   ): void {
     const room = this.rooms[roomId];
     if (!room) return;
+
+    if (series) {
+      room.gameSeries.seriesLength = series;
+    }
+
     const playerId = room.playerMap[client.id];
     if (room.hostId !== playerId) {
       client.emit('error', { message: 'Only the host can start the draft.' });
@@ -279,7 +313,6 @@ export class EventsGateway {
     } else {
       room.gameSeries.redWins++;
     }
-    room.gameSeries.currentGame++;
 
     const picksToArchive = [...room.bluePicks, ...room.redPicks].filter(Boolean);
     room.fearlessPicks = [...(room.fearlessPicks || []), ...picksToArchive];
@@ -295,18 +328,29 @@ export class EventsGateway {
     };
     room.gameSeries.games.push(finishedGame);
 
-    this.server.to(roomId).emit('game_result_confirmed', {
-      gameCode: roomId,
-      confirmedBy: hostInfo ? hostInfo.player.name : 'Host',
-      winner: winner,
-      blueScore: room.gameSeries.blueWins,
-      redScore: room.gameSeries.redWins,
-      nextSetNumber: room.gameSeries.currentGame,
-      timestamp: Date.now(),
-    });
+    const winsNeeded = room.gameSeries.seriesLength ? Math.ceil(room.gameSeries.seriesLength / 2) : 1;
+    if (room.gameSeries.blueWins === winsNeeded || room.gameSeries.redWins === winsNeeded) {
+      this.server.to(roomId).emit('series_over', {
+        winner: room.gameSeries.blueWins === winsNeeded ? 'blue' : 'red',
+        blueScore: room.gameSeries.blueWins,
+        redScore: room.gameSeries.redWins,
+      });
+      this.server.to(roomId).emit('updateState', room);
+    } else {
+      room.gameSeries.currentGame++;
+      this.server.to(roomId).emit('game_result_confirmed', {
+        gameCode: roomId,
+        confirmedBy: hostInfo ? hostInfo.player.name : 'Host',
+        winner: winner,
+        blueScore: room.gameSeries.blueWins,
+        redScore: room.gameSeries.redWins,
+        nextSetNumber: room.gameSeries.currentGame,
+        timestamp: Date.now(),
+      });
 
-    this.resetDraftState(roomId);
-    this.server.to(roomId).emit('updateState', room);
+      this.resetDraftState(roomId);
+      this.server.to(roomId).emit('updateState', room);
+    }
   }
 
   @SubscribeMessage('disconnecting')

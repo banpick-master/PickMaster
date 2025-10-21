@@ -78,7 +78,7 @@ const LobbyPage = () => {
                 navigate(`/room/${roomId}`);
               }
             }}
-          >
+          disabled>
             참가
           </Button>
         </ButtonGroup>

@@ -131,14 +131,35 @@ const initialState = {
   },
 
 
-  finishGame: ({ winner }) => {
+  finishGame: ({ winner, navigate }) => {
     const { roomId } = get();
     if (roomId === 'local') {
       const updater = (state) => {
-        const { gameSeries, bluePicks, redPicks, blueBans, redBans, banMode, fearlessPicks } = state;
+        const { gameSeries, bluePicks, redPicks, blueBans, redBans, banMode, fearlessPicks, gameMode, blueTeamName, redTeamName } = state;
         const finishedGame = { bluePicks, redPicks, blueBans, redBans, winner };
-        const newGameSeries = { ...gameSeries, games: [...gameSeries.games, finishedGame], blueWins: gameSeries.blueWins + (winner === "blue" ? 1 : 0), redWins: gameSeries.redWins + (winner === "red" ? 1 : 0), currentGame: gameSeries.currentGame + 1 };
+                const newGameSeries = {
+                  games: [...gameSeries.games, finishedGame],
+                  blueWins: gameSeries.blueWins + (winner === "blue" ? 1 : 0),
+                  redWins: gameSeries.redWins + (winner === "red" ? 1 : 0),
+                  currentGame: gameSeries.currentGame + 1,
+                };
         const newFearlessPicks = banMode === 'fearless' ? [...(fearlessPicks || []), ...bluePicks, ...redPicks].filter(Boolean) : (fearlessPicks || []);
+
+        let requiredWins = 1; // Default for 'single'
+        const upperCaseGameMode = gameMode.toUpperCase();
+
+        if (upperCaseGameMode === 'BO3') {
+          requiredWins = 2;
+        } else if (upperCaseGameMode === 'BO5') {
+          requiredWins = 3;
+        }
+
+        const seriesEnded = newGameSeries.blueWins >= requiredWins || newGameSeries.redWins >= requiredWins;
+
+        if (seriesEnded && navigate) {
+          navigate('/series-result', { state: { gameSeries: newGameSeries, blueTeamName, redTeamName } });
+        }
+        
         return { gameSeries: newGameSeries, fearlessPicks: newFearlessPicks, turnIndex: 0, blueBans: [], redBans: [], bluePicks: [], redPicks: [], swapRequest: null };
       };
       set(updater);
