@@ -48,7 +48,7 @@ const SinglePlayerGamePage = () => {
     const isBanpickFinished = turnIndex >= BANPICK_ORDER.length;
 
     const handleFinishGameWrapper = (winner) => {
-        finishGame({ winner, navigate });
+        finishGame({ winner });
         setGameWinnerSelected(true);
     };
 

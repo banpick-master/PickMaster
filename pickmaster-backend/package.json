@@ -6,9 +6,6 @@
   "private": true,
   "license": "UNLICENSED",
   "main": "dist/src/index.js",
-  "engines": {
-    "node": "20"
-  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -34,7 +31,6 @@
     "express": "^5.1.0",
     "firebase-admin": "^13.5.0",
     "firebase-functions": "^6.5.0",
-    "pickmaster-frontend": "file:..",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },

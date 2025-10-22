@@ -1,9 +1,9 @@
 11// src/lib/api.js
- const API_BASE_URL = 'http://localhost:3000';
-// const API_BASE_URL = 'https://banpick-master-ab3e7.web.app/api';
+// const API_BASE_URL = 'http://localhost:3000';
+  const API_BASE_URL = 'http://localhost:3000';
 export const createRoomAPI = async (initialSettings) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/rooms`, {
+    const response = await fetch(`${API_BASE_URL}/api/rooms`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -27,7 +27,7 @@ export const createRoomAPI = async (initialSettings) => {
 
 export const getRoomAPI = async (roomId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/rooms/${roomId}`);
+    const response = await fetch(`${API_BASE_URL}/api/rooms/${roomId}`);
 
     if (!response.ok) {
       if (response.status === 404) {

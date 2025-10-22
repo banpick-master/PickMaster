@@ -5,22 +5,10 @@ import { Box, Typography } from '@mui/material';
 const SeriesScoreboard = () => {
   const { gameMode, blueTeamName, redTeamName, gameSeries } = useRoomStore();
 
-  const totalGames = gameMode === 'BO3' ? 3 : gameMode === 'BO5' ? 5 : 1;
-  const currentRound = gameSeries.currentGame;
-
-  let gameModeText = '';
-  if (gameMode === 'single') {
-    gameModeText = '단판';
-  } else if (gameMode === 'BO3') {
-    gameModeText = '3전 2선승제';
-  } else if (gameMode === 'BO5') {
-    gameModeText = '5전 3선승제';
-  }
-
   if (gameMode === 'single') {
     return (
       <Box sx={{ my: 2, textAlign: 'center' }}>
-        <Typography variant="h6">{gameModeText}</Typography>
+        <Typography variant="h6">{gameMode.toUpperCase()}</Typography>
       </Box>
     );
   }
@@ -39,7 +27,7 @@ const SeriesScoreboard = () => {
         {redTeamName}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
-        {gameModeText} ({currentRound}/{totalGames} 게임)
+        ({gameMode})
       </Typography>
     </Box>
   );

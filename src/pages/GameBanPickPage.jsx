@@ -40,7 +40,12 @@ const GameBanPickPage = () => {
         connectToRoom(roomId);
     }, [roomId, connectToRoom]);
     
-
+    useEffect(() => {
+        const requiredWins = gameMode === 'BO3' ? 2 : (gameMode === 'BO5' ? 3 : 1);
+        if (gameSeries.blueWins === requiredWins || gameSeries.redWins === requiredWins) {
+            navigate('/series-result', { state: { gameSeries, blueTeamName, redTeamName } });
+        }
+    }, [gameSeries, blueTeamName, redTeamName, gameMode, navigate]);
 
     useEffect(() => {
         if (gameSeries.currentGame > 1 && gameWinnerSelected) {
@@ -51,7 +56,7 @@ const GameBanPickPage = () => {
     const isBanpickFinished = turnIndex >= BANPICK_ORDER.length;
 
     const handleFinishGameWrapper = (winner) => {
-        finishGame({ winner, navigate });
+        finishGame({ winner });
         setGameWinnerSelected(true);
     };
 
