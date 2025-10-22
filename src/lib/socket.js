@@ -1,89 +1,75 @@
 import { io } from 'socket.io-client';
 
-// const URL = 'https://banpick-master-ab3e7.web.app';
-  const URL = 'https://asia-northeast3-banpick-master-ab3e7.cloudfunctions.net/socket.io';
-export const socket = io(URL, {
+const socket = io('http://localhost:3000', {
   autoConnect: false,
 });
 
-export const getSocket = () => socket;
+export default socket;
 
-export const joinRoom = (roomId, playerId, name, team) => {
-  socket.emit('join_game', { roomId, playerId, name, team });
+export const joinRoom = (roomId, playerId, playerName, team) => {
+  socket.emit('joinRoom', { roomId, playerId, playerName, team });
+};
+
+export const subscribeToRoomUpdates = (callback) => {
+  socket.on('roomUpdate', (data) => {
+    callback(data);
+  });
 };
 
 export const sendJoinTeam = (roomId, team, playerInfo) => {
-  const { id: playerId, name } = playerInfo;
-  socket.emit('join_game', { roomId, team, playerId, name });
+  socket.emit('joinTeam', { roomId, team, playerInfo });
 };
+
 export const sendSwitchTeam = (roomId, playerId) => {
   socket.emit('switchTeam', { roomId, playerId });
 };
 
 export const sendChangeReadyState = (roomId, isReady) => {
-  socket.emit('change_ready_state', { roomId, isReady });
-};
-
-export const sendStartDraft = (roomId) => {
-  socket.emit('start_draft', { roomId });
-};
-
-export const sendSelectChampion = (roomId, champion) => {
-  socket.emit('select_champion', { roomId, champion });
-};
-
-export const sendConfirmSelection = (roomId) => {
-  socket.emit('confirm_selection', { roomId });
-};
-
-export const sendConfirmResult = (roomId, winner) => {
-  socket.emit('confirm_result', { roomId, winner });
-};
-
-export const subscribeToRoomUpdates = (callback) => {
-  socket.on('updateState', (state) => {
-    callback((oldState) => ({ ...oldState, ...state }));
-  });
+  socket.emit('changeReadyState', { roomId, isReady });
 };
 
 export const subscribeToReadyStateChanged = (callback) => {
-  socket.on('ready_state_changed', (data) => {
+  socket.on('readyStateChanged', (data) => {
     callback(data);
   });
+};
+
+export const sendStartDraft = (roomId) => {
+  socket.emit('startDraft', { roomId });
 };
 
 export const subscribeToDraftStarted = (callback) => {
-  socket.on('draft_started', (data) => {
+  socket.on('draftStarted', (data) => {
     callback(data);
   });
 };
 
+export const sendSelectChampion = (roomId, champion) => {
+  socket.emit('selectChampion', { roomId, champion });
+};
+
+export const sendConfirmSelection = (roomId) => {
+  socket.emit('confirmSelection', { roomId });
+};
+
 export const subscribeToChampionSelected = (callback) => {
-  socket.on('champion_selected', (data) => {
+  socket.on('championSelected', (data) => {
     callback(data);
   });
 };
 
 export const subscribeToPhaseProgressed = (callback) => {
-  socket.on('phase_progressed', (data) => {
+  socket.on('phaseProgressed', (data) => {
     callback(data);
   });
+};
+
+export const sendConfirmResult = (roomId, winner) => {
+  socket.emit('confirmResult', { roomId, winner });
 };
 
 export const subscribeToGameResultConfirmed = (callback) => {
-  socket.on('game_result_confirmed', (data) => {
+  socket.on('gameResultConfirmed', (data) => {
     callback(data);
   });
 };
-
-socket.on('connect', () => {
-  console.log('Socket.IO connected');
-});
-
-socket.on('disconnect', () => {
-  console.log('Socket.IO disconnected');
-});
-
-socket.on('connect_error', (error) => {
-  console.error('Socket.IO connection error:', error);
-});

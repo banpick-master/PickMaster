@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createRoomAPI, getRoomAPI } from '../lib/api';
+import socket from '../lib/socket'; 
 import { 
-  socket, 
   joinRoom, 
   subscribeToRoomUpdates, 
   sendJoinTeam, 
