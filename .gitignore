@@ -21,5 +21,14 @@ serviceAccountKey.json
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
-.firebase
+# misc
+*.bak
+*.swp
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Firebase
