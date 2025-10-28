@@ -45,6 +45,13 @@ const SinglePlayerGamePage = () => {
         }
     }, [gameSeries.currentGame, gameWinnerSelected]);
 
+    useEffect(() => {
+        const requiredWins = gameMode === 'BO3' ? 2 : (gameMode === 'BO5' ? 3 : 1);
+        if (gameSeries.blueWins === requiredWins || gameSeries.redWins === requiredWins) {
+            navigate('/series-result', { state: { gameSeries, blueTeamName, redTeamName } });
+        }
+    }, [gameSeries, blueTeamName, redTeamName, gameMode, navigate]);
+
     const isBanpickFinished = turnIndex >= BANPICK_ORDER.length;
 
     const handleFinishGameWrapper = (winner) => {
