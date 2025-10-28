@@ -1,14 +1,10 @@
-// pickmaster-backend/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-
-
-// ✅ .env 파일 로드
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // ✅ .env에서 CORS 허용 주소 읽기
+  // ✅ .env에서 ALLOWED_ORIGINS 읽기
   const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
     : ['http://localhost:5173'];
@@ -24,8 +20,8 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // ✅ Render에서 PORT 환경변수 자동 제공
-  const port = process.env.PORT || 3000; // Render가 지정한 PORT 사용
+  // ✅ Render 자동 포트 사용
+  const port = process.env.PORT || 8080;
   await app.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);
   });
