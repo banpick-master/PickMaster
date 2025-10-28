@@ -1,21 +1,20 @@
 // pickmaster-backend/src/main.ts
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import * as dotenv from 'dotenv';
+
+dotenv.config(); // ✅ .env 파일 로드
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. CORS 설정 (Vercel 주소 허용)
-  // ❗️ Vercel 배포 주소를 여기에 꼭 추가하세요!
-  const allowedOrigins = [
-    'http://localhost:5173', // 로컬 테스트용
-    'https://pick-master.vercel.app', // 👈 이 부분을 Vercel 주소로 변경
-  ];
+  // ✅ .env에서 CORS 허용 주소 읽기
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:5173'];
 
   app.enableCors({
     origin: (origin, callback) => {
-      // origin이 없거나(postman 등) 허용된 목록에 있으면 허용
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -25,11 +24,11 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // 2. 포트 설정 (Render 환경에 맞게 변경)
-  // Render에서 제공하는 process.env.PORT를 사용, 없으면 3000번
-  const port = process.env.PORT || 3000;
+  // ✅ Render에서 PORT 환경변수 자동 제공
+  const port = process.env.PORT || 8080; // Render가 지정한 PORT 사용
   await app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+    console.log(`🚀 Server running on port ${port}`);
   });
 }
+
 bootstrap();
