@@ -14,7 +14,7 @@ export interface RoomState {
   blueTeamPlayers: any[];
   redTeamPlayers: any[];
   spectatorIds: string[];
-  readyCheckStatus: 'idle' | 'in-progress' | 'done';
+  readyCheckStatus: 'idle' | 'in-progress' | 'done' | 'all-ready';
   turnIndex: number;
   blueBans: any[];
   redBans: any[];

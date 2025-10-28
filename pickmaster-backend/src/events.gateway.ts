@@ -153,7 +153,7 @@ export class EventsGateway {
     const allReady = room.blueTeamPlayers.length > 0 && room.redTeamPlayers.length > 0 && allPlayers.every((p) => p.isReady);
 
     if (allReady) {
-      room.readyCheckStatus = 'done';
+      room.readyCheckStatus = 'all-ready';
     } else {
       room.readyCheckStatus = 'idle';
     }
