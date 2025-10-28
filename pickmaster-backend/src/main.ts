@@ -23,7 +23,7 @@ async function bootstrap() {
   });
 
   // ✅ Render 자동 포트 사용
-  const port = process.env.PORT || 10000;
+  const port = process.env.PORT || 8080;
   await app.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);
     console.log(`✅ Allowed Origins: ${allowedOrigins.join(', ')}`); // 허용된 Origin 로그 추가
