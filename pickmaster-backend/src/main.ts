@@ -25,7 +25,7 @@ async function bootstrap() {
   });
 
   // ✅ Render에서 PORT 환경변수 자동 제공
-  const port = process.env.PORT || 8080; // Render가 지정한 PORT 사용
+  const port = process.env.PORT || 3000; // Render가 지정한 PORT 사용
   await app.listen(port, () => {
     console.log(`🚀 Server running on port ${port}`);
   });
