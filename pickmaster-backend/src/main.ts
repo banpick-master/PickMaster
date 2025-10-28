@@ -10,7 +10,7 @@ async function bootstrap() {
   // ❗️ Vercel 배포 주소를 여기에 꼭 추가하세요!
   const allowedOrigins = [
     'http://localhost:5173', // 로컬 테스트용
-    'https://pickmaster-v1.vercel.app', // 👈 이 부분을 Vercel 주소로 변경
+    'https://pick-master.vercel.app', // 👈 이 부분을 Vercel 주소로 변경
   ];
 
   app.enableCors({
