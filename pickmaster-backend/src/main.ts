@@ -1,7 +1,7 @@
 // pickmaster-backend/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as dotenv from 'dotenv';
+
 
 dotenv.config(); // ✅ .env 파일 로드
 
