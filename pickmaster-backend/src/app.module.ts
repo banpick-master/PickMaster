@@ -7,5 +7,6 @@ import { EventsGateway } from './events.gateway';
   imports: [],
   controllers: [AppController],
   providers: [AppService, EventsGateway],
+  exports: [],
 })
 export class AppModule {}
