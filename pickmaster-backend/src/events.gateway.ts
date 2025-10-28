@@ -29,7 +29,7 @@ const BANPICK_ORDER = [
 @WebSocketGateway({
   transports: ['websocket'],
   cors: {
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'https://pick-master.vercel.app/'],
     methods: ['GET', 'POST'],
     credentials: true,
   },
