@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 
-dotenv.config(); // ✅ .env 파일 로드
+// ✅ .env 파일 로드
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
