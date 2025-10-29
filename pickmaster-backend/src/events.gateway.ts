@@ -130,6 +130,12 @@ export class EventsGateway {
     if (!playerInfo) return;
 
     playerInfo.player.isReady = isReady;
+    // Explicitly reassign the arrays to ensure TypeORM detects the change
+    if (playerInfo.team === 'blue') {
+      room.blueTeamPlayers = [...room.blueTeamPlayers];
+    } else {
+      room.redTeamPlayers = [...room.redTeamPlayers];
+    }
     this.server.to(roomId).emit('ready_state_changed', {
       nickname: playerInfo.player.name,
       position: playerInfo.team,
