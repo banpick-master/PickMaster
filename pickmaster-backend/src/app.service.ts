@@ -1,51 +1,29 @@
-import { Injectable } from '@nestjs/common';
-import { CreateRoomDto } from './dto/create-room.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
+import { CreateRoomDto } from './dto/create-room.dto';
+import { RoomEntity } from './room/room.entity';
 
-export interface RoomState {
-  roomId: string;
-  createdAt: Date;
-  gameName: string;
-  blueTeamName: string;
-  redTeamName: string;
-  gameMode: string;
-  timerMode: string;
-  banMode: string;
-  blueTeamPlayers: any[];
-  redTeamPlayers: any[];
-  spectatorIds: string[];
-  readyCheckStatus: 'idle' | 'in-progress' | 'done' | 'all-ready';
-  turnIndex: number;
-  blueBans: any[];
-  redBans: any[];
-  bluePicks: any[];
-  redPicks: any[];
-  swapRequest: any | null;
-  gameSeries: { games: any[]; currentGame: number; blueWins: number; redWins: number };
-  fearlessPicks: any[];
-  playerMap: Record<string, string>; // socketId to playerId mapping
-  hostId: string | null;
-  draftStarted: boolean;
-  currentSelection: any; // Temporary selection during ban/pick
-}
+export type RoomState = RoomEntity;
 
 @Injectable()
 export class AppService {
-  private readonly rooms: Map<string, RoomState> = new Map();
+  constructor(
+    @InjectRepository(RoomEntity)
+    private readonly roomRepository: Repository<RoomEntity>,
+  ) {}
 
-  constructor() {}
-
-  createRoom(createRoomDto: CreateRoomDto): RoomState {
+  async createRoom(createRoomDto: CreateRoomDto): Promise<RoomState> {
     const roomId = uuidv4();
-    const newRoom: RoomState = {
+    const newRoom: Partial<RoomEntity> = {
       roomId,
-      createdAt: new Date(),
       gameName: createRoomDto.gameName,
       blueTeamName: createRoomDto.blueName,
       redTeamName: createRoomDto.redName,
       gameMode: createRoomDto.setCount,
       timerMode: createRoomDto.timerMode,
-      banMode: 'tournament', // Default value, can be changed later
+      banMode: 'tournament',
       blueTeamPlayers: [],
       redTeamPlayers: [],
       spectatorIds: [],
@@ -63,20 +41,26 @@ export class AppService {
       draftStarted: false,
       currentSelection: null,
     };
-    this.rooms.set(roomId, newRoom);
-    return newRoom;
+    const room = this.roomRepository.create(newRoom);
+    return this.roomRepository.save(room);
   }
 
-  getRoom(roomId: string): RoomState | undefined {
-    return this.rooms.get(roomId);
+  async getRoom(roomId: string): Promise<RoomState | undefined> {
+    const room = await this.roomRepository.findOne({ where: { roomId } });
+    return room ?? undefined;
   }
 
-  updateRoom(roomId: string, roomState: RoomState): void {
-    this.rooms.set(roomId, roomState);
+  async updateRoom(roomId: string, roomState: Partial<RoomState>): Promise<RoomState> {
+    await this.roomRepository.update({ roomId }, roomState);
+    const room = await this.getRoom(roomId);
+    if (!room) {
+      throw new NotFoundException(`Room with ID ${roomId} not found.`);
+    }
+    return room;
   }
 
-  findPlayerInRoom(roomId: string, playerId: string) {
-    const room = this.rooms.get(roomId);
+  async findPlayerInRoom(roomId: string, playerId: string) {
+    const room = await this.getRoom(roomId);
     if (!room) return null;
     const bluePlayer = room.blueTeamPlayers.find(p => p.id === playerId);
     if (bluePlayer) return { player: bluePlayer, team: 'blue' };
@@ -85,17 +69,17 @@ export class AppService {
     return null;
   }
 
-  resetReadyState(roomId: string) {
-    const room = this.rooms.get(roomId);
+  async resetReadyState(roomId: string) {
+    const room = await this.getRoom(roomId);
     if (!room) return;
     room.readyCheckStatus = 'idle';
     room.blueTeamPlayers.forEach((p) => (p.isReady = false));
     room.redTeamPlayers.forEach((p) => (p.isReady = false));
-    this.updateRoom(roomId, room);
+    await this.updateRoom(roomId, room);
   }
 
-  resetDraftState(roomId: string) {
-    const room = this.rooms.get(roomId);
+  async resetDraftState(roomId: string) {
+    const room = await this.getRoom(roomId);
     if (!room) return;
     room.turnIndex = 0;
     room.blueBans = [];
@@ -104,6 +88,6 @@ export class AppService {
     room.redPicks = [];
     room.currentSelection = null;
     room.draftStarted = false;
-    this.updateRoom(roomId, room);
+    await this.updateRoom(roomId, room);
   }
 }

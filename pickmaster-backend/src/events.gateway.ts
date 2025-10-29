@@ -11,7 +11,7 @@ import { JoinGameDto } from './dto/join-game.dto';
 import { SelectChampionDto } from './dto/select-champion.dto';
 import { ChangeReadyStateDto } from './dto/change-ready-state.dto';
 import { ConfirmResultDto } from './dto/confirm-result.dto';
-import { AppService, RoomState } from './app.service';
+import { AppService } from './app.service';
 
 const BANPICK_ORDER = [
   { team: "blue", action: "ban" }, { team: "red", action: "ban" },
@@ -41,26 +41,20 @@ export class EventsGateway {
   constructor(private readonly appService: AppService) {}
 
   @SubscribeMessage('join_game')
-  handleJoinRoom(
+  async handleJoinRoom(
     @MessageBody() data: JoinGameDto,
     @ConnectedSocket() client: Socket,
-  ): void {
+  ): Promise<void> {
     const { roomId, team, name, playerId } = data;
     client.join(roomId);
 
-    let room = this.appService.getRoom(roomId);
+    let room = await this.appService.getRoom(roomId);
     if (!room) {
-      // If room doesn't exist, it means it wasn't created via HTTP POST.
-      // This scenario should ideally not happen if frontend flow is correct.
-      // For robustness, we can create a minimal room or throw an error.
-      // For now, let's assume rooms are created via HTTP POST.
       client.emit('error', { message: `Room ${roomId} not found.` });
       return;
     }
 
-    // Add player to room if not already present
     if (playerId) {
-      // Ensure playerMap exists
       if (!room.playerMap) {
         room.playerMap = {};
       }
@@ -72,7 +66,6 @@ export class EventsGateway {
     }
 
     if (team && name && playerId) {
-      // Remove player from any existing team
       room.blueTeamPlayers = room.blueTeamPlayers.filter(p => p.id !== playerId);
       room.redTeamPlayers = room.redTeamPlayers.filter(p => p.id !== playerId);
 
@@ -82,19 +75,19 @@ export class EventsGateway {
       } else if (team === 'red' && room.redTeamPlayers.length === 0) {
         room.redTeamPlayers.push(player);
       }
-      this.appService.resetReadyState(roomId);
+      await this.appService.resetReadyState(roomId);
       client.emit('joinedTeam', { team, playerId: playerId });
     }
-    this.appService.updateRoom(roomId, room);
-    this.server.to(roomId).emit('updateState', room);
+    const updatedRoom = await this.appService.updateRoom(roomId, room);
+    this.server.to(roomId).emit('updateState', updatedRoom);
   }
 
   @SubscribeMessage('switchTeam')
-  handleSwitchTeam(
+  async handleSwitchTeam(
     @MessageBody() { roomId, playerId }: { roomId: string, playerId: string },
     @ConnectedSocket() client: Socket,
-  ): void {
-    let room = this.appService.getRoom(roomId);
+  ): Promise<void> {
+    let room = await this.appService.getRoom(roomId);
     if (!room || !playerId) return;
 
     const blueTeamIndex = room.blueTeamPlayers.findIndex((p) => p.id === playerId);
@@ -102,10 +95,10 @@ export class EventsGateway {
       if (room.redTeamPlayers.length > 0) return;
       const player = room.blueTeamPlayers.splice(blueTeamIndex, 1)[0];
       room.redTeamPlayers.push(player);
-      this.appService.resetReadyState(roomId);
+      await this.appService.resetReadyState(roomId);
       client.emit('switchedTeam', { team: 'red' });
-      this.appService.updateRoom(roomId, room);
-      this.server.to(roomId).emit('updateState', room);
+      const updatedRoom = await this.appService.updateRoom(roomId, room);
+      this.server.to(roomId).emit('updateState', updatedRoom);
       return;
     }
 
@@ -114,32 +107,31 @@ export class EventsGateway {
       if (room.blueTeamPlayers.length > 0) return;
       const player = room.redTeamPlayers.splice(redTeamIndex, 1)[0];
       room.blueTeamPlayers.push(player);
-      this.appService.resetReadyState(roomId);
+      await this.appService.resetReadyState(roomId);
       client.emit('switchedTeam', { team: 'blue' });
-      this.appService.updateRoom(roomId, room);
-      this.server.to(roomId).emit('updateState', room);
+      const updatedRoom = await this.appService.updateRoom(roomId, room);
+      this.server.to(roomId).emit('updateState', updatedRoom);
       return;
     }
   }
 
   @SubscribeMessage('change_ready_state')
   @UsePipes(new ValidationPipe())
-  handleSetReady(
+  async handleSetReady(
     @MessageBody() data: ChangeReadyStateDto,
     @ConnectedSocket() client: Socket,
-  ): void {
+  ): Promise<void> {
     const { roomId, isReady } = data;
-    let room = this.appService.getRoom(roomId);
+    let room = await this.appService.getRoom(roomId);
     if (!room) return;
 
-    // Ensure playerMap exists before accessing
     if (!room.playerMap) {
       room.playerMap = {};
     }
     const playerId = room.playerMap[client.id];
     if (!playerId) return;
 
-    const playerInfo = this.appService.findPlayerInRoom(roomId, playerId);
+    const playerInfo = await this.appService.findPlayerInRoom(roomId, playerId);
     if (!playerInfo) return;
 
     playerInfo.player.isReady = isReady;
@@ -157,19 +149,18 @@ export class EventsGateway {
     } else {
       room.readyCheckStatus = 'idle';
     }
-    this.appService.updateRoom(roomId, room);
-    this.server.to(roomId).emit('updateState', room);
+    const updatedRoom = await this.appService.updateRoom(roomId, room);
+    this.server.to(roomId).emit('updateState', updatedRoom);
   }
 
   @SubscribeMessage('start_draft')
-  handleStartDraft(
+  async handleStartDraft(
     @MessageBody() { roomId }: { roomId: string },
     @ConnectedSocket() client: Socket,
-  ): void {
-    let room = this.appService.getRoom(roomId);
+  ): Promise<void> {
+    let room = await this.appService.getRoom(roomId);
     if (!room) return;
 
-    // Ensure playerMap exists before accessing
     if (!room.playerMap) {
       room.playerMap = {};
     }
@@ -186,34 +177,33 @@ export class EventsGateway {
       return;
     }
 
-    room.draftStarted = true; // Set draftStarted to true
-    this.appService.updateRoom(roomId, room);
+    room.draftStarted = true;
+    const updatedRoom = await this.appService.updateRoom(roomId, room);
 
     this.server.to(roomId).emit('draft_started', {
       gameCode: roomId,
       startedBy: room.hostId,
       timestamp: Date.now(),
     });
-    this.server.to(roomId).emit('updateState', room);
+    this.server.to(roomId).emit('updateState', updatedRoom);
   }
 
   @SubscribeMessage('select_champion')
-  handleSelectChampion(
+  async handleSelectChampion(
     @MessageBody() data: SelectChampionDto & { roomId: string },
     @ConnectedSocket() client: Socket,
-  ): void {
+  ): Promise<void> {
     const { roomId, champion } = data;
-    let room = this.appService.getRoom(roomId);
+    let room = await this.appService.getRoom(roomId);
     if (!room) return;
 
-    // Ensure playerMap exists before accessing
     if (!room.playerMap) {
       room.playerMap = {};
     }
     const playerId = room.playerMap[client.id];
     if (!playerId) return;
 
-    const playerInfo = this.appService.findPlayerInRoom(roomId, playerId);
+    const playerInfo = await this.appService.findPlayerInRoom(roomId, playerId);
     if (!playerInfo) return;
 
     const currentTurn = BANPICK_ORDER[room.turnIndex];
@@ -223,7 +213,7 @@ export class EventsGateway {
     }
 
     room.currentSelection = { champion, player: playerInfo.player };
-    this.appService.updateRoom(roomId, room);
+    const updatedRoom = await this.appService.updateRoom(roomId, room);
 
     this.server.to(roomId).emit('champion_selected', {
       nickname: playerInfo.player.name,
@@ -232,18 +222,17 @@ export class EventsGateway {
       phase: room.turnIndex,
       isConfirmed: false,
     });
-    this.server.to(roomId).emit('updateState', room);
+    this.server.to(roomId).emit('updateState', updatedRoom);
   }
 
   @SubscribeMessage('confirm_selection')
-  handleConfirmSelection(
+  async handleConfirmSelection(
     @MessageBody() { roomId }: { roomId: string },
     @ConnectedSocket() client: Socket,
-  ): void {
-    let room = this.appService.getRoom(roomId);
+  ): Promise<void> {
+    let room = await this.appService.getRoom(roomId);
     if (!room || !room.currentSelection) return;
 
-    // Ensure playerMap exists before accessing
     if (!room.playerMap) {
       room.playerMap = {};
     }
@@ -268,7 +257,7 @@ export class EventsGateway {
     const fromPhase = room.turnIndex;
     room.turnIndex++;
     room.currentSelection = null;
-    this.appService.updateRoom(roomId, room);
+    const updatedRoom = await this.appService.updateRoom(roomId, room);
 
     this.server.to(roomId).emit('phase_progressed', {
       gameCode: roomId,
@@ -278,19 +267,18 @@ export class EventsGateway {
       confirmedChampion: confirmedChampion,
       timestamp: Date.now(),
     });
-    this.server.to(roomId).emit('updateState', room);
+    this.server.to(roomId).emit('updateState', updatedRoom);
   }
 
   @SubscribeMessage('confirm_result')
-  handleConfirmResult(
+  async handleConfirmResult(
     @MessageBody() data: ConfirmResultDto & { roomId: string },
     @ConnectedSocket() client: Socket,
-  ): void {
+  ): Promise<void> {
     const { roomId, winner } = data;
-    let room = this.appService.getRoom(roomId);
+    let room = await this.appService.getRoom(roomId);
     if (!room) return;
 
-    // Ensure playerMap exists before accessing
     if (!room.playerMap) {
       room.playerMap = {};
     }
@@ -310,7 +298,7 @@ export class EventsGateway {
     const picksToArchive = [...room.bluePicks, ...room.redPicks].filter(Boolean);
     room.fearlessPicks = [...(room.fearlessPicks || []), ...picksToArchive];
 
-    const hostInfo = this.appService.findPlayerInRoom(roomId, room.hostId);
+    const hostInfo = await this.appService.findPlayerInRoom(roomId, room.hostId);
 
     const finishedGame = {
       bluePicks: room.bluePicks,
@@ -321,8 +309,8 @@ export class EventsGateway {
     };
     room.gameSeries.games.push(finishedGame);
 
-    this.appService.resetDraftState(roomId);
-    this.appService.updateRoom(roomId, room);
+    await this.appService.resetDraftState(roomId);
+    const updatedRoom = await this.appService.updateRoom(roomId, room);
 
     this.server.to(roomId).emit('game_result_confirmed', {
       gameCode: roomId,
@@ -333,32 +321,34 @@ export class EventsGateway {
       nextSetNumber: room.gameSeries.currentGame,
       timestamp: Date.now(),
     });
-    this.server.to(roomId).emit('updateState', room);
+    this.server.to(roomId).emit('updateState', updatedRoom);
   }
 
   @SubscribeMessage('disconnecting')
-  handleDisconnecting(@ConnectedSocket() client: Socket): void {
-    client.rooms.forEach((roomId) => {
-      let room = this.appService.getRoom(roomId);
-      if (room && roomId !== client.id) {
-        // Ensure playerMap exists before accessing
+  async handleDisconnecting(@ConnectedSocket() client: Socket): Promise<void> {
+    for (const roomId of client.rooms) {
+      if (roomId === client.id) continue;
+
+      let room = await this.appService.getRoom(roomId);
+      if (room) {
         if (!room.playerMap) {
           room.playerMap = {};
         }
         const playerId = room.playerMap[client.id];
-        if (!playerId) return;
+        if (!playerId) continue;
 
         const wasInBlue = room.blueTeamPlayers.some(p => p.id === playerId);
         const wasInRed = room.redTeamPlayers.some(p => p.id === playerId);
         if (wasInBlue) room.blueTeamPlayers = room.blueTeamPlayers.filter(p => p.id !== playerId);
         if (wasInRed) room.redTeamPlayers = room.redTeamPlayers.filter(p => p.id !== playerId);
         delete room.playerMap[client.id];
+
         if (wasInBlue || wasInRed) {
-          this.appService.resetReadyState(roomId);
-          this.appService.updateRoom(roomId, room);
-          this.server.to(roomId).emit('updateState', room);
+          await this.appService.resetReadyState(roomId);
+          const updatedRoom = await this.appService.updateRoom(roomId, room);
+          this.server.to(roomId).emit('updateState', updatedRoom);
         }
       }
-    });
+    }
   }
 }
