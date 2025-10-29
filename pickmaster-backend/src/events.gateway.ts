@@ -70,9 +70,9 @@ export class EventsGateway {
       room.redTeamPlayers = room.redTeamPlayers.filter(p => p.id !== playerId);
 
       const player = { id: playerId, name, isReady: false };
-      if (team === 'blue' && room.blueTeamPlayers.length === 0) {
+      if (team === 'blue') {
         room.blueTeamPlayers.push(player);
-      } else if (team === 'red' && room.redTeamPlayers.length === 0) {
+      } else if (team === 'red') {
         room.redTeamPlayers.push(player);
       }
       await this.appService.resetReadyState(roomId);
