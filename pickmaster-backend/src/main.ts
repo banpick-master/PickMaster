@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.setGlobalPrefix('api'); // Add this line
 
   // ✅ .env에서 ALLOWED_ORIGINS 읽고 각 주소의 앞뒤 공백 제거
   const allowedOrigins = process.env.ALLOWED_ORIGINS

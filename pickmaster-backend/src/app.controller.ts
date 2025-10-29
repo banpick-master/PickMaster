@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, HttpCode, HttpStatus, NotFoundExcep
 import { AppService } from './app.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 
-@Controller('api/rooms')
+@Controller('rooms')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
