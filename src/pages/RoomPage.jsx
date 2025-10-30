@@ -23,7 +23,7 @@ const TeamPaper = styled(Paper, {
 })(({ theme, teamColor }) => ({
   padding: theme.spacing(3),
   height: '100%',
-  borderTop: `4px solid ${theme.palette[teamColor]?.main || theme.palette.grey[500]}`,
+  borderTop: `4px solid ${theme.palette[teamColor]?.main || theme.palette.grey[500]}`, 
 }));
 
 const TeamTitle = styled(Typography, {
@@ -237,4 +237,5 @@ function RoomPage() {
     </Container>
   );
 }
+
 export default RoomPage;
