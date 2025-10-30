@@ -318,7 +318,15 @@ export class EventsGateway {
     };
     room.gameSeries.games.push(finishedGame);
 
-    await this.appService.resetDraftState(roomId);
+    // Reset draft state manually instead of calling resetDraftState
+    room.turnIndex = 0;
+    room.blueBans = [];
+    room.redBans = [];
+    room.bluePicks = [];
+    room.redPicks = [];
+    room.currentSelection = null;
+    room.draftStarted = false;
+
     const updatedRoom = await this.appService.updateRoom(roomId, room);
 
     this.server.to(roomId).emit('game_result_confirmed', {
