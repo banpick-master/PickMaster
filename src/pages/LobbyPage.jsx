@@ -20,6 +20,9 @@ const ContentWrapper = styled(Container)(({ theme }) => ({
 const Title = styled(Typography)(({ theme }) => ({
   color: theme.palette.primary.main,
   marginBottom: theme.spacing(2),
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '2.5rem',
+  },
 }));
 
 const Subtitle = styled(Typography)(({ theme }) => ({
@@ -27,6 +30,9 @@ const Subtitle = styled(Typography)(({ theme }) => ({
   maxWidth: '600px',
   margin: '0 auto',
   marginBottom: theme.spacing(4),
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '1rem',
+  },
 }));
 
 const ButtonGroup = styled(Stack)(({ theme }) => ({
@@ -59,12 +65,17 @@ const LobbyPage = () => {
           </Subtitle>
         </Box>
 
-        <ButtonGroup direction="row" spacing={3} justifyContent="center">
+        <ButtonGroup 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={2} 
+          justifyContent="center"
+        >
           <Button
             variant="contained"
             color="primary"
             size="large"
             onClick={() => navigate("/mode-select")}
+            fullWidth
           >
             새 게임 생성
           </Button>
@@ -78,12 +89,18 @@ const LobbyPage = () => {
                 navigate(`/room/${roomId}`);
               }
             }}
+            fullWidth
           >
             참가
           </Button>
         </ButtonGroup>
 
-        <LinkGroup direction="row" spacing={3} justifyContent="center">
+        <LinkGroup 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={{ xs: 1, sm: 3 }} 
+          justifyContent="center"
+          alignItems="center"
+        >
           <Link href="https://www.leagueoflegends.com/ko-kr/news/tags/patch-notes/" target="_blank" rel="noopener">
             최신 패치 노트
           </Link>

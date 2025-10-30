@@ -28,7 +28,8 @@ const PickCardStyled = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'isCurrentTurn' && prop !== 'isSwapFrom' && prop !== 'champion' && prop !== 'isTemporary',
 })(({ theme, isCurrentTurn, isSwapFrom, champion, isTemporary }) => ({
   position: 'relative',
-  height: '65px',
+  height: 'auto',
+  aspectRatio: '16 / 9',
   backgroundColor: 'rgba(0,0,0,0.3)',
   border: `2px solid ${isCurrentTurn || isSwapFrom ? theme.palette.primary.main : 'transparent'}`,
   borderRadius: theme.shape.borderRadius,
@@ -46,8 +47,9 @@ const PickCardStyled = styled(Box, {
 const BanCardStyled = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'isCurrentTurn' && prop !== 'isTemporary',
 })(({ theme, isCurrentTurn, isTemporary }) => ({
-  height: '40px',
-  width: '40px',
+  height: 'auto',
+  width: '100%',
+  aspectRatio: '1 / 1',
   overflow: 'hidden',
   backgroundColor: isCurrentTurn ? 'rgba(0,0,0,0.2)' : 'transparent',
   border: `2px solid ${isCurrentTurn ? theme.palette.primary.main : theme.palette.divider}`,
@@ -79,7 +81,7 @@ const PickCard = ({ champion, isCurrentTurn, team, index, onSwap, isSwapFrom }) 
           textAlign: 'center',
           color: 'white',
           fontWeight: 'bold',
-          fontSize: '0.9rem',
+          fontSize: { xs: '0.7rem', sm: '0.9rem' },
           backgroundColor: 'rgba(0, 0, 0, 0.6)',
           padding: '2px 0',
           textShadow: '1px 1px 3px black',
@@ -116,7 +118,7 @@ const TeamSlot = ({ team, bans, picks, currentTurn, isBanpickFinished, onSwap, s
   return (
     <TeamSlotContainer>
       <TeamHeader team={team}>
-        <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold', textTransform: 'uppercase' }}>
+        <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold', textTransform: 'uppercase', fontSize: { xs: '1rem', sm: '1.5rem' } }}>
           {teamName}
         </Typography>
       </TeamHeader>
@@ -144,12 +146,16 @@ const TeamSlot = ({ team, bans, picks, currentTurn, isBanpickFinished, onSwap, s
 
       <Box sx={{ pt: 2, borderTop: (theme) => `1px solid ${theme.palette.divider}`, flexShrink: 0 }}>
         <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', textAlign: 'center', mb: 1 }}>BANS</Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: '5px' }}>
+        <Grid container spacing={1} justifyContent="center">
           {banSlots.map((champion, index) => {
             const isCurrentBanTurn = index === activeBanIndex;
-            return <BanCard key={`ban-${index}`} champion={champion} isCurrentTurn={isCurrentBanTurn} />;
+            return (
+              <Grid item xs={2.4} key={`ban-${index}`}>
+                <BanCard champion={champion} isCurrentTurn={isCurrentBanTurn} />
+              </Grid>
+            );
           })}
-        </Box>
+        </Grid>
       </Box>
     </TeamSlotContainer>
   );

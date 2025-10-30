@@ -33,16 +33,16 @@ const BanPickFinished = ({ gameWinnerSelected, handleFinishGameWrapper }) => {
         <BanPickCompletePaper elevation={3}>
             {gameWinnerSelected ? (
                 <>
-                    <Typography variant="h4">게임 {gameSeries.currentGame - 1} 종료</Typography>
-                    <Typography>다음 게임을 준비하세요.</Typography>
+                    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>게임 {gameSeries.currentGame - 1} 종료</Typography>
+                    <Typography sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>다음 게임을 준비하세요.</Typography>
                 </>
             ) : (
                 <>
-                    <Typography variant="h5" gutterBottom>밴픽 완료!</Typography>
-                    <Typography variant="body1" sx={{ mb: 2 }}>승리 팀을 선택하세요.</Typography>
-                    <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                        <BlueTeamButton variant="contained" onClick={() => handleFinishGameWrapper('blue')}>{blueTeamName} 승리</BlueTeamButton>
-                        <RedTeamButton variant="contained" onClick={() => handleFinishGameWrapper('red')}>{redTeamName} 승리</RedTeamButton>
+                    <Typography variant="h5" gutterBottom sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }}>밴픽 완료!</Typography>
+                    <Typography variant="body1" sx={{ mb: 2, fontSize: { xs: '0.9rem', sm: '1rem' } }}>승리 팀을 선택하세요.</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 1, width: { xs: '100%', sm: 'auto' } }}>
+                        <BlueTeamButton variant="contained" onClick={() => handleFinishGameWrapper('blue')} fullWidth>{blueTeamName} 승리</BlueTeamButton>
+                        <RedTeamButton variant="contained" onClick={() => handleFinishGameWrapper('red')} fullWidth>{redTeamName} 승리</RedTeamButton>
                     </Box>
                 </>
             )}

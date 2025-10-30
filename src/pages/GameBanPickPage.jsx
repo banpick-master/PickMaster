@@ -21,7 +21,17 @@ const BANPICK_ORDER = [
     { team: "blue", action: "pick" }, { team: "red", action: "pick" },
 ];
 
-const PageContainer = styled(Container)(({ theme }) => ({ display: 'flex', flexDirection: 'column', height: '100vh', padding: theme.spacing(1, 2), gap: theme.spacing(1) }));
+const PageContainer = styled(Container)(({ theme }) => ({ 
+    display: 'flex', 
+    flexDirection: 'column', 
+    height: '100vh', 
+    padding: theme.spacing(1), 
+    gap: theme.spacing(1),
+    [theme.breakpoints.down('md')]: {
+        height: 'auto',
+        padding: theme.spacing(0.5)
+    }
+}));
 const MainGrid = styled(Grid)({ flexGrow: 1 });
 
 const GameBanPickPage = () => {
@@ -95,15 +105,15 @@ const GameBanPickPage = () => {
             <Box><SeriesScoreboard /></Box>
             <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
                 <MainGrid container spacing={2} sx={{ maxWidth: '1600px', width: '100%' }}>
-                    <Grid item xs={12} md={2}><TeamSlot team="blue" bans={augmentedBlueBans} picks={augmentedBluePicks} currentTurn={BANPICK_ORDER[turnIndex]} isBanpickFinished={isBanpickFinished} onSwap={handleSwapRequest} swapRequest={swapRequest} /></Grid>
-                    <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <Grid item xs={12} md={2.5}><TeamSlot team="blue" bans={augmentedBlueBans} picks={augmentedBluePicks} currentTurn={BANPICK_ORDER[turnIndex]} isBanpickFinished={isBanpickFinished} onSwap={handleSwapRequest} swapRequest={swapRequest} /></Grid>
+                    <Grid item xs={12} md={7} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                         {isBanpickFinished ? (
                             <BanPickFinished gameWinnerSelected={gameWinnerSelected} handleFinishGameWrapper={handleFinishGameWrapper} />
                         ) : (
                             <BanPickInProgress />
                         )}
                     </Grid>
-                    <Grid item xs={12} md={2}><TeamSlot team="red" bans={augmentedRedBans} picks={augmentedRedPicks} currentTurn={BANPICK_ORDER[turnIndex]} isBanpickFinished={isBanpickFinished} onSwap={handleSwapRequest} swapRequest={swapRequest} /></Grid>
+                    <Grid item xs={12} md={2.5}><TeamSlot team="red" bans={augmentedRedBans} picks={augmentedRedPicks} currentTurn={BANPICK_ORDER[turnIndex]} isBanpickFinished={isBanpickFinished} onSwap={handleSwapRequest} swapRequest={swapRequest} /></Grid>
                 </MainGrid>
             </Box>
         </PageContainer>
