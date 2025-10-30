@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRoomStore } from '../store/roomStore';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 // --- Styled Components ---
