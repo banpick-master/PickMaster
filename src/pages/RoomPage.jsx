@@ -13,25 +13,17 @@ const CenteredBox = styled(Box)(({ theme }) => ({
 const InvitePaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1, 2),
   marginTop: theme.spacing(2),
-  display: 'flex',
-  flexDirection: 'column',
+  display: 'inline-flex',
   alignItems: 'center',
   gap: theme.spacing(1.5),
-  [theme.breakpoints.up('sm')]: {
-    flexDirection: 'row',
-    display: 'inline-flex',
-  },
 }));
 
 const TeamPaper = styled(Paper, {
   shouldForwardProp: (prop) => prop !== 'teamColor',
 })(({ theme, teamColor }) => ({
-  padding: theme.spacing(2),
+  padding: theme.spacing(3),
   height: '100%',
   borderTop: `4px solid ${theme.palette[teamColor]?.main || theme.palette.grey[500]}`,
-  [theme.breakpoints.up('md')]: {
-    padding: theme.spacing(3),
-  },
 }));
 
 const TeamTitle = styled(Typography, {
@@ -145,7 +137,7 @@ function RoomPage() {
     if (myTeam) { // If user is already in a team
       const canSwitch = (myTeam === 'blue' && redTeamPlayers.length === 0) || (myTeam === 'red' && blueTeamPlayers.length === 0);
       return (
-        <Button variant="outlined" onClick={switchTeam} disabled={!canSwitch} fullWidth>
+        <Button variant="outlined" onClick={switchTeam} disabled={!canSwitch}>
           진영 바꾸기
         </Button>
       );
@@ -153,33 +145,33 @@ function RoomPage() {
 
     // If user is not in a team
     return (
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: '100%' }}>
-        <Button variant="contained" onClick={() => joinTeam('blue', name)} disabled={!name} fullWidth>
+      <>
+        <Button variant="contained" onClick={() => joinTeam('blue', name)} disabled={!name}>
           블루팀 참가
         </Button>
-        <Button variant="contained" color="error" onClick={() => joinTeam('red', name)} disabled={!name} fullWidth>
+        <Button variant="contained" color="error" onClick={() => joinTeam('red', name)} disabled={!name}>
           레드팀 참가
         </Button>
-      </Stack>
+      </>
     );
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 4 } }}>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       <CenteredBox>
-        <Typography variant="h3" gutterBottom sx={{ fontSize: { xs: '2rem', sm: '3rem' } }}>{gameName}</Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>참가자를 기다리고 있습니다...</Typography>
+        <Typography variant="h3" gutterBottom>{gameName}</Typography>
+        <Typography variant="h6" color="text.secondary">참가자를 기다리고 있습니다...</Typography>
         <InvitePaper elevation={2}>
-          <Typography variant="body1" sx={{ flexShrink: 0 }}>초대 링크:</Typography>
-          <Chip label={window.location.href} sx={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }} />
+          <Typography variant="body1">초대 링크:</Typography>
+          <Chip label={window.location.href} />
           <Button onClick={handleCopy} size="small">
             {copied ? "복사됨!" : "복사"}
           </Button>
         </InvitePaper>
       </CenteredBox>
 
-      <Paper sx={{ p: 2, mb: { xs: 2, sm: 4 } }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+      <Paper sx={{ p: 2, mb: 4 }}>
+        <Stack direction="row" spacing={2} alignItems="center">
           <TextField 
             label="이름"
             variant="outlined" 
@@ -187,14 +179,13 @@ function RoomPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={!!myTeam} // Disable name input if already in a team
-            fullWidth
           />
           {renderTeamJoinControls()}
         </Stack>
       </Paper>
 
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Grid container spacing={{ xs: 2, md: 4 }} alignItems="stretch" sx={{ maxWidth: '1200px', width: '100%' }}>
+        <Grid container spacing={4} alignItems="stretch" sx={{ maxWidth: '1200px', width: '100%' }}>
           <Grid item xs={12} md={6}>
             <TeamPaper teamColor="blue">
               <TeamTitle variant="h5" teamColor="blue">{blueTeamName || '블루팀'}</TeamTitle>
@@ -220,23 +211,23 @@ function RoomPage() {
         </Grid>
       </Box>
 
-      <Box sx={{ textAlign: 'center', mt: { xs: 2, sm: 4 } }}>
+      <Box sx={{ textAlign: 'center', mt: 4 }}>
         {myPlayerId === hostId && (
           <Button
             variant="contained"
             size="large"
             onClick={startDraft}
             disabled={readyCheckStatus !== 'all-ready'}
-            sx={{ mb: 2, width: { xs: '100%', sm: 'auto' } }}
+            sx={{ mb: 2 }}
           >
             드래프트 시작
           </Button>
         )}
 
         {readyCheckStatus === 'all-ready' ? (
-          <Typography variant="h5" color="primary" sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}>모두 준비 완료! 호스트가 게임을 시작하기를 기다리고 있습니다...</Typography>
+          <Typography variant="h5" color="primary">모두 준비 완료! 호스트가 게임을 시작하기를 기다리고 있습니다...</Typography>
         ) : (
-          <Typography variant="h6" color="text.secondary" sx={{ fontSize: { xs: '0.9rem', sm: '1.1rem' } }}>
+          <Typography variant="h6" color="text.secondary">
             {blueTeamPlayers.length > 0 && redTeamPlayers.length > 0 
               ? '모든 플레이어가 준비하면 게임이 시작됩니다...' 
               : '상대 팀 플레이어를 기다리고 있습니다...'}

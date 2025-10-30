@@ -39,12 +39,13 @@ export const ChampionSelect = ({ champions, onSelect, disabledChampions = new Se
   };
 
   return (
+    // ▼▼▼ [수정] Paper의 sx prop에서 height: '100%' 제거 ▼▼▼
     <Paper sx={{
       width: '100%',
-      height: '100%',
-      padding: { xs: '0.5rem', sm: '1rem' },
+      padding: '1rem',
       backgroundColor: 'background.paper',
       borderRadius: 3,
+      // height: '100%', // 이 줄을 제거합니다.
       display: 'flex',
       flexDirection: 'column',
     }} elevation={3}>
@@ -55,49 +56,47 @@ export const ChampionSelect = ({ champions, onSelect, disabledChampions = new Se
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         sx={{ mb: '1rem' }}
-        disabled={isLocked}
+        disabled={isLocked} // Lock search bar
       />
-      <Box sx={{ overflowX: 'auto', mb: '1rem' }}>
-        <ToggleButtonGroup
-          value={selectedRole}
-          exclusive
-          onChange={handleRoleChange}
-          aria-label="champion role"
-          size="small"
-          sx={{ 
-            mb: '0.5rem', 
-            justifyContent: 'center',
-            minWidth: 'max-content'
-          }}
-          disabled={isLocked}
-        >
-          {roles.map((role) => (
-            <ToggleButton key={role.key} value={role.key} aria-label={role.label}>
-              {role.label}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </Box>
+      <ToggleButtonGroup
+        value={selectedRole}
+        exclusive
+        onChange={handleRoleChange}
+        aria-label="champion role"
+        fullWidth
+        size="small"
+        sx={{ mb: '1rem' }}
+        disabled={isLocked} // Lock role filter
+      >
+        {roles.map((role) => (
+          <ToggleButton key={role.key} value={role.key} aria-label={role.label}>
+            {role.label}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
       
+      {/* ▼▼▼ [수정] 챔피언 목록 Box에서 flexGrow와 overflowY 제거 ▼▼▼ */}
       <Box sx={{
         flexGrow: 1,
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))',
         gap: '0.5rem',
         overflowY: 'auto',
-        pr: '0.5rem',
+        paddingRight: '0.5rem',
+        maxHeight: 'calc(100vh - 450px)', // Set a calculated max height
+        // 🔽 [개선 3] 스크롤바 스타일링 추가
         '&::-webkit-scrollbar': {
-          width: '8px',
+          width: '12px',
         },
         '&::-webkit-scrollbar-track': {
-          backgroundColor: 'rgba(0, 0, 0, 0.1)',
-          borderRadius: '4px',
+          backgroundColor: 'rgba(0, 0, 0, 0.2)',
+          borderRadius: '6px',
         },
         '&::-webkit-scrollbar-thumb': {
-          backgroundColor: 'rgba(255, 255, 255, 0.3)',
-          borderRadius: '4px',
+          backgroundColor: 'rgba(255, 255, 255, 0.4)',
+          borderRadius: '6px',
           '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+            backgroundColor: 'rgba(255, 255, 255, 0.6)',
           }
         },
       }}>
