@@ -215,6 +215,12 @@ export class EventsGateway {
       return;
     }
 
+    // Check for fearless ban/pick
+    if (room.banMode === 'fearless' && room.fearlessPicks.some(p => p.id === champion.id)) {
+      client.emit('error', { message: 'This champion has already been picked in this series.' });
+      return;
+    }
+
     room.currentSelection = { champion, player: playerInfo.player };
     const updatedRoom = await this.appService.updateRoom(roomId, room);
 
