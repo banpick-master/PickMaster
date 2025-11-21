@@ -7,19 +7,9 @@ import { Box, Container, Grid } from "@mui/material";
 import { styled } from '@mui/material/styles';
 import BanPickInProgress from "../components/BanPickInProgress";
 import BanPickFinished from "../components/BanPickFinished";
+import { BANPICK_ORDER } from "../lib/constants";
 
-const BANPICK_ORDER = [
-    { team: "blue", action: "ban" }, { team: "red", action: "ban" },
-    { team: "blue", action: "ban" }, { team: "red", action: "ban" },
-    { team: "blue", action: "ban" }, { team: "red", action: "ban" },
-    { team: "blue", action: "pick" }, { team: "red", action: "pick" },
-    { team: "red", action: "pick" }, { team: "blue", action: "pick" },
-    { team: "blue", action: "pick" }, { team: "red", action: "pick" },
-    { team: "red", action: "ban" }, { team: "blue", action: "ban" },
-    { team: "red", action: "ban" }, { team: "blue", action: "ban" },
-    { team: "red", action: "pick" }, { team: "blue", action: "pick" },
-    { team: "blue", action: "pick" }, { team: "red", action: "pick" },
-];
+
 
 const PageContainer = styled(Container)(({ theme }) => ({ display: 'flex', flexDirection: 'column', height: '100vh', padding: theme.spacing(1, 2), gap: theme.spacing(1) }));
 const MainGrid = styled(Grid)({ flexGrow: 1 });

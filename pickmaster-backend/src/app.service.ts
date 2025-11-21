@@ -9,10 +9,38 @@ export type RoomState = RoomEntity;
 
 @Injectable()
 export class AppService {
+  private timers = new Map<string, NodeJS.Timeout>();
+
   constructor(
     @InjectRepository(RoomEntity)
     private readonly roomRepository: Repository<RoomEntity>,
   ) {}
+
+  startTimer(roomId: string, durationMs: number, onTimeout: () => void) {
+    this.clearTimer(roomId);
+    const timer = setTimeout(onTimeout, durationMs);
+    this.timers.set(roomId, timer);
+  }
+
+  clearTimer(roomId: string) {
+    if (this.timers.has(roomId)) {
+      clearTimeout(this.timers.get(roomId));
+      this.timers.delete(roomId);
+    }
+  }
+
+  getTurnDuration(timerMode: string): number {
+    switch (timerMode) {
+      case 'fast':
+        return 20 * 1000; // 20 seconds
+      case 'default':
+        return 30 * 1000; // 30 seconds
+      case 'slow':
+        return 60 * 1000; // 60 seconds
+      default:
+        return 30 * 1000;
+    }
+  }
 
   async createRoom(createRoomDto: CreateRoomDto): Promise<RoomState> {
     const roomId = uuidv4();
@@ -40,6 +68,8 @@ export class AppService {
       hostId: null,
       draftStarted: false,
       currentSelection: null,
+      turnDuration: null,
+      turnEndTime: null,
     };
     const room = this.roomRepository.create(newRoom);
     return this.roomRepository.save(room);
@@ -59,8 +89,7 @@ export class AppService {
     return room;
   }
 
-  async findPlayerInRoom(roomId: string, playerId: string) {
-    const room = await this.getRoom(roomId);
+  findPlayerInRoom(room: RoomState, playerId: string) {
     if (!room) return null;
     const bluePlayer = room.blueTeamPlayers.find(p => p.id === playerId);
     if (bluePlayer) return { player: bluePlayer, team: 'blue' };
@@ -69,18 +98,16 @@ export class AppService {
     return null;
   }
 
-  async resetReadyState(roomId: string) {
-    const room = await this.getRoom(roomId);
-    if (!room) return;
+  resetReadyState(room: RoomState): RoomState {
+    if (!room) return room;
     room.readyCheckStatus = 'idle';
     room.blueTeamPlayers.forEach((p) => (p.isReady = false));
     room.redTeamPlayers.forEach((p) => (p.isReady = false));
-    await this.updateRoom(roomId, room);
+    return room;
   }
 
-  async resetDraftState(roomId: string) {
-    const room = await this.getRoom(roomId);
-    if (!room) return;
+  resetDraftState(room: RoomState): RoomState {
+    if (!room) return room;
     room.turnIndex = 0;
     room.blueBans = [];
     room.redBans = [];
@@ -88,6 +115,6 @@ export class AppService {
     room.redPicks = [];
     room.currentSelection = null;
     room.draftStarted = false;
-    await this.updateRoom(roomId, room);
+    return room;
   }
 }

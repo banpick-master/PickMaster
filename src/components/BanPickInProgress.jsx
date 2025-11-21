@@ -21,7 +21,8 @@ const BANPICK_ORDER = [
 const BanPickInProgress = () => {
     const {
         roomId, timerMode, turnIndex, selectChampion, confirmSelection,
-        currentSelection, isMyTurn, champions, bluePicks, redPicks, blueBans, redBans, fearlessPicks
+        currentSelection, isMyTurn, champions, bluePicks, redPicks, blueBans, redBans, fearlessPicks,
+        turnDuration, turnEndTime
     } = useRoomStore();
 
     const getUnselectableChampionNames = () => {
@@ -36,7 +37,7 @@ const BanPickInProgress = () => {
 
     return (
         <Stack spacing={2} sx={{ height: '100%' }}>
-            {timerMode !== 'infinite' && <TurnTimer key={turnIndex} />}
+            {timerMode !== 'infinite' && <TurnTimer key={turnIndex} initialTime={turnDuration} endTime={turnEndTime} onTimeout={() => confirmSelection()} />}
             <Box sx={{ flex: 1, minHeight: 0 }}>
                 <ChampionSelect
                     champions={champions}

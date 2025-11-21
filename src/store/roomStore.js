@@ -3,38 +3,19 @@ import { createRoomAPI, getRoomAPI } from '../lib/api';
 import { 
   socket, 
   joinRoom, 
-  subscribeToRoomUpdates, 
   sendJoinTeam, 
   sendSwitchTeam, 
   sendChangeReadyState, 
-  subscribeToReadyStateChanged, 
   sendStartDraft,
-  subscribeToDraftStarted,
   sendSelectChampion,
   sendConfirmSelection,
-  subscribeToChampionSelected,
-  subscribeToPhaseProgressed,
   sendConfirmResult,
-  subscribeToGameResultConfirmed
 } from '../lib/socket';
 import { uid } from 'uid';
+import { initializeSocketListeners } from '../lib/socketHandler';
+import { BANPICK_ORDER, LOCAL_STORAGE_KEY } from '../lib/constants';
 
 import championData from '../data/champions.json';
-
-const BANPICK_ORDER = [
-  { team: "blue", action: "ban" }, { team: "red", action: "ban" },
-  { team: "blue", action: "ban" }, { team: "red", action: "ban" },
-  { team: "blue", action: "ban" }, { team: "red", action: "ban" },
-  { team: "blue", action: "pick" }, { team: "red", action: "pick" },
-  { team: "red", action: "pick" }, { team: "blue", action: "pick" },
-  { team: "blue", action: "pick" }, { team: "red", action: "pick" },
-  { team: "red", action: "ban" }, { team: "blue", action: "ban" },
-  { team: "red", action: "ban" }, { team: "blue", action: "ban" },
-  { team: "red", action: "pick" }, { team: "blue", action: "pick" },
-  { team: "blue", action: "pick" }, { team: "red", action: "pick" },
-];
-
-const LOCAL_STORAGE_KEY = 'pickmaster_user';
 
 const initialState = {
   patch: "14.19",
@@ -44,6 +25,8 @@ const initialState = {
   gameMode: "single",
   timerMode: "default",
   banMode: "tournament",
+  turnDuration: null,
+  turnEndTime: null,
   gameSeries: { games: [], currentGame: 1, blueWins: 0, redWins: 0 },
   fearlessPicks: [],
   blueTeamPlayers: [],
@@ -266,73 +249,6 @@ const initialState = {
     }
     joinRoom(roomId, freshState.myPlayerId, myName, myTeam);
     
-    subscribeToRoomUpdates(set);
-    subscribeToChampionSelected((data) => {
-      const { champions } = get();
-      let championObject = null;
-
-      // Check if the champion object is nested inside the data object
-      const potentialChampion = (data && data.champion) ? data.champion : data;
-
-      if (typeof potentialChampion === 'string') {
-        championObject = champions.find(c => c.id === potentialChampion || c.name === potentialChampion);
-      } else if (typeof potentialChampion === 'object' && potentialChampion !== null && potentialChampion.id) {
-        championObject = potentialChampion;
-      }
-      
-      if (championObject) {
-        set({ currentSelection: championObject });
-      } else {
-        console.error("Received champion data could not be processed:", data);
-      }
-    });
-    subscribeToPhaseProgressed((data) => {
-      console.log('Phase progressed, server confirmed:', data);
-      set((state) => {
-        const { fromPhase, confirmedChampion } = data;
-        const turn = BANPICK_ORDER[fromPhase];
-        if (!turn) return {};
-
-        const key = turn.team === 'blue' 
-          ? (turn.action === 'ban' ? 'blueBans' : 'bluePicks') 
-          : (turn.action === 'ban' ? 'redBans' : 'redPicks');
-        
-        const currentSlot = state[key] || [];
-
-        return {
-          turnIndex: state.turnIndex + 1,
-          [key]: [...currentSlot, confirmedChampion],
-          currentSelection: null,
-        };
-      });
-    });
-
-    subscribeToReadyStateChanged((data) => {
-        set((state) => {
-            const findAndUpdate = (players) => {
-                return players.map(p => {
-                    if (p.name === data.nickname) {
-                        return { ...p, isReady: data.isReady };
-                    }
-                    return p;
-                });
-            };
-            return {
-                blueTeamPlayers: findAndUpdate(state.blueTeamPlayers),
-                redTeamPlayers: findAndUpdate(state.redTeamPlayers),
-            };
-        });
-    });
-
-
-
-    subscribeToDraftStarted((data) => {
-        set({ draftStarted: true });
-    });
-
-    subscribeToGameResultConfirmed((data) => {
-        console.log('Game result confirmed by server:', data);
-        // The updateState event will handle the UI refresh
-    });
+    initializeSocketListeners(socket, set, get);
   },
 }));

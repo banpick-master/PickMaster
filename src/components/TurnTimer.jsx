@@ -18,12 +18,30 @@ const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
   borderRadius: 4,
 }));
 
-const TurnTimer = ({ time = 30, onTimeout }) => {
-  const [seconds, setSeconds] = useState(time);
+const TurnTimer = ({ initialTime = 30, endTime, onTimeout }) => {
+  const [seconds, setSeconds] = useState(initialTime);
 
   useEffect(() => {
-    setSeconds(time); // Reset timer when key (e.g., turnIndex) changes
-  }, [time]);
+    const calculateRemainingTime = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((endTime - now) / 1000));
+      setSeconds(remaining);
+      if (remaining <= 0 && onTimeout) {
+        onTimeout();
+      }
+    };
+
+    if (endTime) {
+      calculateRemainingTime();
+      const timer = setInterval(calculateRemainingTime, 1000);
+      return () => clearInterval(timer);
+    } else {
+      // Fallback for when endTime is not provided (e.g., during initial render or specific game states)
+      setSeconds(initialTime);
+      const timer = setInterval(() => setSeconds((s) => s - 1), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [initialTime, endTime, onTimeout]);
 
   useEffect(() => {
     if (seconds <= 0) {
@@ -34,7 +52,7 @@ const TurnTimer = ({ time = 30, onTimeout }) => {
     return () => clearInterval(timer);
   }, [seconds, onTimeout]);
 
-  const progress = (seconds / time) * 100;
+  const progress = (seconds / initialTime) * 100;
   const progressColor = progress > 50 ? "primary" : progress > 25 ? "warning" : "error";
 
   return (

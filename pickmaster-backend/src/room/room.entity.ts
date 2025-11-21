@@ -78,4 +78,10 @@ export class RoomEntity {
 
   @Column('jsonb', { nullable: true, default: null }) // Stores the champion currently being selected (temporary)
   currentSelection: any | null;
+
+  @Column({ type: 'int', nullable: true })
+  turnDuration: number | null;
+
+  @Column({ type: 'bigint', nullable: true })
+  turnEndTime: number | null;
 }
