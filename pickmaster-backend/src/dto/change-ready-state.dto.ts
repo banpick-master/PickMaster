@@ -5,5 +5,7 @@ export class ChangeReadyStateDto {
   roomId: string;
 
   @IsBoolean()
+  
   isReady: boolean;
+
 }
