@@ -2,65 +2,47 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EventsGateway } from './events.gateway';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config'; // ConfigService import
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { RoomModule } from './room/room.module';
-import { RoomEntity } from './room/room.entity';
+import { RoomModule } from './room/room.module'; // RoomModule import
+import { RoomEntity } from './room/room.entity'; // RoomEntity import
 
 @Module({
   imports: [
-    // 환경 변수 로드 설정
+    // Load environment variables (.env file or system variables)
     ConfigModule.forRoot({
-      isGlobal: true, 
-      envFilePath: '.env',
+      isGlobal: true, // Make ConfigService available globally
+      envFilePath: '.env', // Specify .env file path (optional for local dev)
     }),
-    
-    // TypeORM 비동기 설정 (배포 환경 최적화)
+    // Configure TypeORM asynchronously to use ConfigService
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule], // Make ConfigModule available within this factory
       useFactory: (configService: ConfigService) => {
+        // Get the database connection URL from environment variables
         const databaseUrl = configService.get<string>('DATABASE_URL');
-        // NODE_ENV가 'production'이면 배포 환경으로 간주
-        const isProduction = configService.get<string>('NODE_ENV') === 'production';
-
         if (!databaseUrl) {
-          throw new Error('DATABASE_URL 환경 변수가 설정되지 않았습니다.');
+          throw new Error('DATABASE_URL environment variable is not set.');
         }
-
-        console.log(`[DB 연결] 현재 환경: ${isProduction ? '배포(Production)' : '개발(Development)'}`);
+        console.log('Using DATABASE_URL:', databaseUrl ? '****** (set)' : 'Not Set');
 
         return {
-          type: 'postgres',
-          url: databaseUrl,
-          entities: [RoomEntity],
-          
-          /**
-           * [중요] 배포 환경(production)에서는 synchronize를 반드시 false로 해야 합니다.
-           * true로 할 경우, 서버가 재시작될 때마다 데이터가 초기화되거나 
-           * 의도치 않게 테이블 구조가 변경되어 데이터 손실이 발생할 수 있습니다.
-           * 배포 환경에서는 'Migration(마이그레이션)'을 사용하는 것이 정석입니다.
-           */
-          synchronize: !isProduction, 
-
-          /**
-           * [SSL 설정]
-           * 배포 환경(isProduction)이거나, 로컬 호스트가 아닌 외부 DB URL일 경우 SSL을 켭니다.
-           * rejectUnauthorized: false는 대부분의 클라우드 DB(Render, Heroku 등)에서 필수입니다.
-           */
-          ssl: isProduction || (databaseUrl && !databaseUrl.includes('localhost'))
-            ? { rejectUnauthorized: false }
-            : false,
-
-          // 배포 환경에서는 쿼리 로그를 꺼서 성능 저하 및 보안 이슈 방지
-          logging: !isProduction,
+          type: 'postgres', // Database type
+          url: databaseUrl, // Use the connection URL from env var
+          entities: [RoomEntity], // Specify entities (tables) TypeORM should manage
+          synchronize: true, // Auto-update DB schema based on entities (dev only! Use migrations in prod)
+          ssl: databaseUrl.includes('render.com') // Enable SSL for Render databases
+               ? { rejectUnauthorized: false } // Required for Render's self-signed certs
+               : false,
+          logging: configService.get<string>('NODE_ENV') !== 'production', // Log SQL queries only in dev
         };
       },
-      inject: [ConfigService],
+      inject: [ConfigService], // Inject ConfigService into the factory
     }),
-    
+    // Import RoomModule to make RoomRepository available
     RoomModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, EventsGateway],
+  controllers: [AppController], // Handles HTTP requests
+  providers: [AppService, EventsGateway], // Contains business logic and WebSocket gateway
+  exports: [],
 })
 export class AppModule {}
