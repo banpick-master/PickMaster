@@ -59,6 +59,7 @@ const initialState = {
         set({ champions: champArray, isChampionDataLoaded: true });
       },  createNewRoom: async (gameInfo) => {
     try {
+      
       const { roomId } = await createRoomAPI(gameInfo);
       const myPlayerId = uid(16);
       set({ ...initialState, ...gameInfo, roomId, myPlayerId, isConnected: true, playMode: 'multi' });
