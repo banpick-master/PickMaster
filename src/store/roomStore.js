@@ -54,7 +54,7 @@ const initialState = {
       ...initialState,
     
       fetchChampions: () => {
-        const champArray = Object.values(championData.data).map((c) => ({ id: c.id, name: c.name, image: `https://ddragon.leagueoflegends.com/cdn/15.20.1/img/champion/${c.image.full}`, tags: c.tags }));
+        const champArray = Object.values(championData.data).map((c) => ({ id: c.id, name: c.name, image: `https://ddragon.leagueoflegends.com/cdn/15.24.1/img/champion/${c.image.full}`, tags: c.tags }));
         champArray.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
         set({ champions: champArray, isChampionDataLoaded: true });
       },  createNewRoom: async (gameInfo) => {
