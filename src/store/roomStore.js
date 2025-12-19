@@ -18,7 +18,7 @@ import { BANPICK_ORDER, LOCAL_STORAGE_KEY } from '../lib/constants';
 import championData from '../data/champions.json';
 
 const initialState = {
-  patch: "14.19",
+  patch: "15.24.1",
   gameName: "새로운 경기",
   blueTeamName: "블루 팀",
   redTeamName: "레드 팀",
