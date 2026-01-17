@@ -56,7 +56,7 @@ export default function ModeSelectPage() {
                 <SectionTitle variant="overline">게임 방식</SectionTitle>
                 <FullWidthToggleButtonGroup color="primary" value={playMode} exclusive onChange={(e, val) => val && setPlayMode(val)}>
                   <ToggleButton value="single">혼자하기</ToggleButton>
-                  <ToggleButton value="multi">함께하기</ToggleButton>
+                  <ToggleButton value="multi" disabled ={true} > 함께하기</ToggleButton>
                 </FullWidthToggleButtonGroup>
               </Grid>
             </Grid>

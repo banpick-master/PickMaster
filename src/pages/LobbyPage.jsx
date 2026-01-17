@@ -78,7 +78,7 @@ const LobbyPage = () => {
                 navigate(`/room/${roomId}`);
               }
             }}
-          disabled={true}   >   //  아직 구현되지 않음 
+          disabled={true} >   
             참가
           </Button>
         </ButtonGroup>
