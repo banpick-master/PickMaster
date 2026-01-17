@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { createRoomAPI, getRoomAPI } from '../lib/api';
 import { 
-  socket, 
+  connectStomp,
+  disconnectStomp,
   joinRoom, 
   sendJoinTeam, 
   sendSwitchTeam, 
@@ -12,7 +13,7 @@ import {
   sendConfirmResult,
 } from '../lib/socket';
 import { uid } from 'uid';
-import { initializeSocketListeners } from '../lib/socketHandler';
+import { handleSocketMessage } from '../lib/socketHandler';
 import { BANPICK_ORDER, LOCAL_STORAGE_KEY } from '../lib/constants';
 
 import championData from '../data/champions.json';
@@ -44,22 +45,22 @@ const initialState = {
   myPlayerId: null,
   hostId: null,
   draftStarted: false,
-    currentSelection: null, // Add new state for temporary selection
-    champions: [],
-      isChampionDataLoaded: false,
-    };
-    
-    
-    export const useRoomStore = create((set, get) => ({
-      ...initialState,
-    
-      fetchChampions: () => {
-        const champArray = Object.values(championData.data).map((c) => ({ id: c.id, name: c.name, image: `https://ddragon.leagueoflegends.com/cdn/15.24.1/img/champion/${c.image.full}`, tags: c.tags }));
-        champArray.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-        set({ champions: champArray, isChampionDataLoaded: true });
-      },  createNewRoom: async (gameInfo) => {
+  currentSelection: null,
+  champions: [],
+  isChampionDataLoaded: false,
+};
+
+export const useRoomStore = create((set, get) => ({
+  ...initialState,
+
+  fetchChampions: () => {
+    const champArray = Object.values(championData.data).map((c) => ({ id: c.id, name: c.name, image: `https://ddragon.leagueoflegends.com/cdn/15.24.1/img/champion/${c.image.full}`, tags: c.tags }));
+    champArray.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    set({ champions: champArray, isChampionDataLoaded: true });
+  },
+  
+  createNewRoom: async (gameInfo) => {
     try {
-      
       const { roomId } = await createRoomAPI(gameInfo);
       const myPlayerId = uid(16);
       set({ ...initialState, ...gameInfo, roomId, myPlayerId, isConnected: true, playMode: 'multi' });
@@ -113,7 +114,6 @@ const initialState = {
       sendSelectChampion(roomId, champion);
     }
   },
-
 
   finishGame: ({ winner }) => {
     const { roomId } = get();
@@ -171,7 +171,10 @@ const initialState = {
     });
   },
 
-  resetRoomState: () => set(initialState),
+  resetRoomState: () => {
+    disconnectStomp();
+    set(initialState);
+  },
   
   joinTeam: (team, name) => {
     const { roomId, myPlayerId } = get();
@@ -221,10 +224,13 @@ const initialState = {
         set({ isConnected: false });
         return;
       }
-    } catch (error) { console.error("방 상태를 가져오는 데 실패했습니다:", error); set({ isConnected: false }); return; }
+    } catch (error) { 
+        console.error("방 상태를 가져오는 데 실패했습니다:", error); 
+        set({ isConnected: false }); 
+        return; 
+    }
     
-    socket.connect();
-
+    // Player ID 및 정보 복구 로직
     let playerId = get().myPlayerId;
     if (!playerId) {
       try {
@@ -236,20 +242,40 @@ const initialState = {
       } catch (e) { localStorage.removeItem(LOCAL_STORAGE_KEY); }
     }
 
-    const freshState = get();
-    const allPlayers = [...(freshState.blueTeamPlayers || []), ...(freshState.redTeamPlayers || [])];
-    const myPlayerObject = allPlayers.find(p => p.id === freshState.myPlayerId);
-    const myName = myPlayerObject ? myPlayerObject.name : null;
-    let myTeam = null;
-    if (myPlayerObject) {
-        if (freshState.blueTeamPlayers.some(p => p.id === freshState.myPlayerId)) {
-            myTeam = 'blue';
-        } else if (freshState.redTeamPlayers.some(p => p.id === freshState.myPlayerId)) {
-            myTeam = 'red';
+    // STOMP 연결 시작
+    connectStomp(
+        roomId,
+        // onConnect Callback
+        () => {
+            set({ isConnected: true });
+            
+            const freshState = get();
+            // 현재 플레이어 정보로 join 요청 재전송 (재접속 시나리오 등)
+            // 상태에서 내 정보 찾기
+            const allPlayers = [...(freshState.blueTeamPlayers || []), ...(freshState.redTeamPlayers || [])];
+            const myPlayerObject = allPlayers.find(p => p.id === freshState.myPlayerId);
+            const myName = myPlayerObject ? myPlayerObject.name : null;
+            
+            let myTeam = null;
+            if (myPlayerObject) {
+                if (freshState.blueTeamPlayers.some(p => p.id === freshState.myPlayerId)) {
+                    myTeam = 'blue';
+                } else if (freshState.redTeamPlayers.some(p => p.id === freshState.myPlayerId)) {
+                    myTeam = 'red';
+                }
+            }
+
+            // 연결 직후 Join 메시지 전송
+            joinRoom(roomId, freshState.myPlayerId, myName, myTeam);
+        },
+        // onDisconnect Callback
+        () => {
+            set({ isConnected: false });
+        },
+        // onMessage Callback
+        (payload) => {
+            handleSocketMessage(payload, set, get);
         }
-    }
-    joinRoom(roomId, freshState.myPlayerId, myName, myTeam);
-    
-    initializeSocketListeners(socket, set, get);
+    );
   },
 }));
